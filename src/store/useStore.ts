@@ -1,0 +1,156 @@
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import type { Language } from "@/lib/i18n";
+
+export type ThemeName =
+  | "executive-dark"
+  | "industrial-light"
+  | "command-center"
+  | "steel-gold"
+  | "minimal-white";
+
+export type SyncStatus = "synced" | "syncing" | "failed" | "offline";
+
+export type AiProvider = "gemini" | "openai" | "claude" | "disabled";
+
+interface Settings {
+  // Preferences
+  language: Language;
+  theme: ThemeName;
+
+  // Notion
+  notionToken: string;
+  kpiDbId: string;
+  actionDbId: string;
+  progressDbId: string;
+  inventoryDbId: string;
+
+  // AI
+  geminiKey: string;
+  aiProvider: AiProvider;
+  aiModel: string;
+  temperature: number;
+  maxTokens: number;
+
+  // Sync
+  autoSync: boolean;
+  autoSyncInterval: number; // minutes
+}
+
+interface RuntimeState {
+  lastSync: number | null; // epoch ms (serialisable)
+  syncStatus: SyncStatus;
+  usingCache: boolean;
+  errorLog: string[];
+}
+
+interface Actions {
+  setLanguage: (lang: Language) => void;
+  setTheme: (theme: ThemeName) => void;
+
+  // Generic credential / setting setters
+  setCredentials: (keys: Partial<Settings>) => void;
+
+  // Individual setters (kept for ergonomic use across components)
+  setNotionToken: (v: string) => void;
+  setKpiDbId: (v: string) => void;
+  setActionDbId: (v: string) => void;
+  setProgressDbId: (v: string) => void;
+  setInventoryDbId: (v: string) => void;
+  setGeminiKey: (v: string) => void;
+  setAiProvider: (v: AiProvider) => void;
+  setAiModel: (v: string) => void;
+  setTemperature: (v: number) => void;
+  setMaxTokens: (v: number) => void;
+  setAutoSync: (v: boolean) => void;
+  setAutoSyncInterval: (v: number) => void;
+
+  setSyncStatus: (status: SyncStatus, time?: number) => void;
+  setUsingCache: (v: boolean) => void;
+  pushError: (msg: string) => void;
+  resetSettings: () => void;
+}
+
+export type AppState = Settings & RuntimeState & Actions;
+
+const defaultSettings: Settings = {
+  language: "ar",
+  theme: "executive-dark",
+  notionToken: "",
+  kpiDbId: "",
+  actionDbId: "",
+  progressDbId: "",
+  inventoryDbId: "",
+  geminiKey: "",
+  aiProvider: "gemini",
+  aiModel: "gemini-1.5-flash",
+  temperature: 0.4,
+  maxTokens: 2048,
+  autoSync: false,
+  autoSyncInterval: 15,
+};
+
+export const useStore = create<AppState>()(
+  persist(
+    (set) => ({
+      ...defaultSettings,
+
+      // runtime
+      lastSync: null,
+      syncStatus: "offline",
+      usingCache: false,
+      errorLog: [],
+
+      setLanguage: (language) => set({ language }),
+      setTheme: (theme) => set({ theme }),
+
+      setCredentials: (keys) => set((state) => ({ ...state, ...keys })),
+
+      setNotionToken: (notionToken) => set({ notionToken }),
+      setKpiDbId: (kpiDbId) => set({ kpiDbId }),
+      setActionDbId: (actionDbId) => set({ actionDbId }),
+      setProgressDbId: (progressDbId) => set({ progressDbId }),
+      setInventoryDbId: (inventoryDbId) => set({ inventoryDbId }),
+      setGeminiKey: (geminiKey) => set({ geminiKey }),
+      setAiProvider: (aiProvider) => set({ aiProvider }),
+      setAiModel: (aiModel) => set({ aiModel }),
+      setTemperature: (temperature) => set({ temperature }),
+      setMaxTokens: (maxTokens) => set({ maxTokens }),
+      setAutoSync: (autoSync) => set({ autoSync }),
+      setAutoSyncInterval: (autoSyncInterval) => set({ autoSyncInterval }),
+
+      setSyncStatus: (syncStatus, time) =>
+        set(time !== undefined ? { syncStatus, lastSync: time } : { syncStatus }),
+      setUsingCache: (usingCache) => set({ usingCache }),
+      pushError: (msg) =>
+        set((state) => ({
+          errorLog: [
+            `${new Date().toLocaleString()} — ${msg}`,
+            ...state.errorLog,
+          ].slice(0, 25),
+        })),
+
+      resetSettings: () => set({ ...defaultSettings, errorLog: [] }),
+    }),
+    {
+      name: "factory-os-settings",
+      // Only persist settings, not transient runtime sync state.
+      partialize: (state) => ({
+        language: state.language,
+        theme: state.theme,
+        notionToken: state.notionToken,
+        kpiDbId: state.kpiDbId,
+        actionDbId: state.actionDbId,
+        progressDbId: state.progressDbId,
+        inventoryDbId: state.inventoryDbId,
+        geminiKey: state.geminiKey,
+        aiProvider: state.aiProvider,
+        aiModel: state.aiModel,
+        temperature: state.temperature,
+        maxTokens: state.maxTokens,
+        autoSync: state.autoSync,
+        autoSyncInterval: state.autoSyncInterval,
+      }),
+    }
+  )
+);

@@ -1,0 +1,123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* ───────────────────────────────────────────────
+     THEME 1 — Executive Dark (default)
+     Dark navy background · cyan + emerald accents
+  ─────────────────────────────────────────────── */
+  :root,
+  :root[data-theme="executive-dark"] {
+    --bg: #0b1120;
+    --text: #f8fafc;
+    --card: #1e293b;
+    --border: #334155;
+    --accent: #06b6d4;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --critical: #ef4444;
+  }
+
+  /* ───────────────────────────────────────────────
+     THEME 2 — Industrial Light
+     Clean white/grey · blue + green accents
+  ─────────────────────────────────────────────── */
+  :root[data-theme="industrial-light"] {
+    --bg: #f8fafc;
+    --text: #0f172a;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --accent: #2563eb;
+    --success: #16a34a;
+    --warning: #d97706;
+    --critical: #dc2626;
+  }
+
+  /* ───────────────────────────────────────────────
+     THEME 3 — Command Center
+     Black · neon green / amber / red alerts
+  ─────────────────────────────────────────────── */
+  :root[data-theme="command-center"] {
+    --bg: #000000;
+    --text: #e2e8f0;
+    --card: #0a0a0a;
+    --border: #27272a;
+    --accent: #39ff14;
+    --success: #39ff14;
+    --warning: #ffbf00;
+    --critical: #ff003c;
+  }
+
+  /* ───────────────────────────────────────────────
+     THEME 4 — Steel & Gold
+     Charcoal · gold + steel blue accents
+  ─────────────────────────────────────────────── */
+  :root[data-theme="steel-gold"] {
+    --bg: #1c2128;
+    --text: #d0d7de;
+    --card: #22272e;
+    --border: #444c56;
+    --accent: #ffd700;
+    --success: #2ea043;
+    --warning: #e3b341;
+    --critical: #da3633;
+  }
+
+  /* ───────────────────────────────────────────────
+     THEME 5 — Minimal White
+     White · minimal cards / subtle borders
+  ─────────────────────────────────────────────── */
+  :root[data-theme="minimal-white"] {
+    --bg: #ffffff;
+    --text: #18181b;
+    --card: #ffffff;
+    --border: #f4f4f5;
+    --accent: #2563eb;
+    --success: #16a34a;
+    --warning: #ca8a04;
+    --critical: #dc2626;
+  }
+
+  html,
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+  }
+
+  body {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+}
+
+/* Smooth themed scrollbars */
+@layer utilities {
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--bg);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 8px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--accent);
+  }
+
+  .bg-accent-soft {
+    background-color: color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+  .bg-success-soft {
+    background-color: color-mix(in srgb, var(--success) 12%, transparent);
+  }
+  .bg-warning-soft {
+    background-color: color-mix(in srgb, var(--warning) 12%, transparent);
+  }
+  .bg-critical-soft {
+    background-color: color-mix(in srgb, var(--critical) 12%, transparent);
+  }
+}
