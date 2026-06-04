@@ -8,8 +8,51 @@
 // returning UUIDs instead of names. We try, in order:
 //   rollup text → formula text → rich_text → title → select → relation id
 // so the dashboard never shows raw UUIDs when a readable name exists.
+//
+// As a guaranteed last line of defence, a hardcoded KPI dictionary maps
+// the known relation IDs from THIS FactoryOS workspace → readable names,
+// so the UI never displays raw "c33f6162-..." codes even when no rollup
+// is available. The map is dash/case-insensitive.
 // ───────────────────────────────────────────────────────────
 
+// Hardcoded mapping extracted directly from the live FactoryOS workspace.
+// Keys are normalized (lowercase, no dashes) at lookup time, so you can
+// add new entries with or without hyphens — both will match.
+const KPI_ID_MAP: Record<string, string> = {
+  "c33f6162-013b-8225-8e53-816a5de63ea7": "OEE (كفاءة المعدات)",
+  "1c8f6162-013b-82a9-8e15-816609db89de": "Cycle Time (زمن الدورة)",
+  "a46f6162-013b-83df-aa79-81510ace7774": "Changeover Time (وقت التبديل)",
+  "683f6162-013b-833b-8669-0155a902e8ce": "Defect Rate (DPMO) (معدل العيوب)",
+  "dbdf6162-013b-82d5-b9fa-011cc8ec600c": "Throughput (معدل الإنتاجية)",
+  "5dbf6162-013b-82b8-94b3-013c96eba9ad": "MTTR / Downtime (زمن التوقف)",
+  "017f6162-013b-83bc-adcc-818a03cb3904": "Quality Defect Containment",
+};
+
+// Pre-normalize the dictionary once for O(1), dash-insensitive lookups.
+const NORMALIZED_KPI_MAP: Record<string, string> = Object.fromEntries(
+  Object.entries(KPI_ID_MAP).map(([id, name]) => [normalizeId(id), name])
+);
+
+function normalizeId(id: string): string {
+  return id.toLowerCase().replace(/-/g, "").trim();
+}
+
+/**
+ * Smart resolver: turns any cryptic Notion relation ID into its readable
+ * KPI name. Falls back to the raw ID if it is not in the dictionary, so
+ * nothing is ever lost.
+ */
+export function resolveKpiName(relationId: string | undefined | null): string {
+  if (!relationId) return "Unknown KPI";
+  const clean = relationId.trim();
+  return NORMALIZED_KPI_MAP[normalizeId(clean)] || clean;
+}
+
+/** True when a string looks like a Notion UUID (with or without dashes). */
+export function looksLikeNotionId(value: string): boolean {
+  const v = value.replace(/-/g, "");
+  return /^[0-9a-f]{32}$/i.test(v);
+}
 
 export function readText(prop: any): string {
   if (!prop) return "";
@@ -39,9 +82,10 @@ export function readText(prop: any): string {
   if (prop.date?.start) return prop.date.start;
   if (typeof prop.number === "number") return String(prop.number);
   if (typeof prop.checkbox === "boolean") return prop.checkbox ? "Yes" : "No";
-  // last resort: relation → first id (readable name not available without extra fetch)
+  // last resort: relation → resolve first id via the hardcoded dictionary,
+  // falling back to the raw id when it is not a known KPI.
   if (Array.isArray(prop.relation) && prop.relation.length)
-    return prop.relation[0].id;
+    return resolveKpiName(prop.relation[0].id);
   return "";
 }
 

@@ -7,6 +7,8 @@ import {
   readDate,
   pick,
   normalizeAlert,
+  resolveKpiName,
+  looksLikeNotionId,
 } from "@/lib/notionMapper";
 import type {
   KpiMeasurement,
@@ -38,11 +40,17 @@ async function queryAll(notion: Client, databaseId: string): Promise<any[]> {
 function mapKpis(pages: any[]): KpiMeasurement[] {
   return pages.map((page) => {
     const p = page.properties || {};
+    // readText already resolves relations via the dictionary, but if it still
+    // returns a raw Notion UUID (e.g. an unmapped relation), force one more
+    // pass through resolveKpiName so the UI never shows a cryptic code.
+    const rawKpi =
+      readText(pick(p, ["KPI Master Link", "KPI Name", "KPI", "Name"])) || "";
+    const kpiName = looksLikeNotionId(rawKpi)
+      ? resolveKpiName(rawKpi)
+      : rawKpi || "Unknown KPI";
     return {
       measurementId: page.id,
-      kpiName:
-        readText(pick(p, ["KPI Master Link", "KPI Name", "KPI", "Name"])) ||
-        "Unknown KPI",
+      kpiName,
       date: readDate(pick(p, ["Date"])) || new Date().toISOString().split("T")[0],
       shift: readText(pick(p, ["Shift"])) || "All",
       line: readText(pick(p, ["Line", "Production Line"])) || "Unknown",
@@ -63,7 +71,10 @@ function mapActions(pages: any[]): ActionPlan[] {
     return {
       id: page.id,
       initiative: readText(pick(p, ["Optimization Initiative", "Initiative", "Name"])),
-      targetKpi: readText(pick(p, ["Target KPI"])),
+      targetKpi: (() => {
+        const raw = readText(pick(p, ["Target KPI"]));
+        return looksLikeNotionId(raw) ? resolveKpiName(raw) : raw;
+      })(),
       owner: readText(pick(p, ["Owner"])),
       status: readText(pick(p, ["Status"])) || "Unknown",
       priority: readText(pick(p, ["Priority"])) || "Medium",
