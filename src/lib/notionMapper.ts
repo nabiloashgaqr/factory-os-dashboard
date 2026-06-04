@@ -58,6 +58,22 @@ const NAME_TO_PAIR: Record<string, { en: string; ar: string }> = (() => {
   return out;
 })();
 
+// Prefix index: first 8 hex chars of each Notion ID → bilingual pair.
+// Notion sometimes returns a related page under a slightly different
+// block/page id that shares the same leading segment. Matching on the
+// stable prefix guarantees we still resolve the readable name instead
+// of leaking "KPI-5AAF6".
+const PREFIX_KPI_MAP: Record<string, { en: string; ar: string }> = (() => {
+  const out: Record<string, { en: string; ar: string }> = {};
+  for (const [id, names] of Object.entries(KPI_MULTILANG_MAP)) {
+    out[normalizeId(id).substring(0, 8)] = names;
+  }
+  return out;
+})();
+
+// Remember unknown IDs we already warned about (dev aid, avoids log spam).
+const warnedUnknownIds = new Set<string>();
+
 /**
  * Resolve a Notion relation ID (or already-readable name) to a clean,
  * language-aware KPI name.
@@ -80,11 +96,24 @@ export function getCleanKpiName(
   const byName = NAME_TO_PAIR[raw.toLowerCase()];
   if (byName) return lang === "ar" ? byName.ar : byName.en;
 
-  // 3) Only shorten genuine Notion IDs; leave human-readable names intact
-  //    (so "Scrap Rate" / "OEE" coming straight from a Select column survive).
+  // 3) Prefix match: same leading 8 hex chars (handles Notion returning a
+  //    sibling page/block id with a different suffix). This is what finally
+  //    eliminates the lingering "KPI-5AAF6" / "KPI-E90F6" codes.
   if (looksLikeNotionId(raw)) {
+    const byPrefix = PREFIX_KPI_MAP[normalizeId(raw).substring(0, 8)];
+    if (byPrefix) return lang === "ar" ? byPrefix.ar : byPrefix.en;
+
+    // Truly unknown ID → log once in dev so you can add it to the map.
+    if (process.env.NODE_ENV !== "production" && !warnedUnknownIds.has(raw)) {
+      warnedUnknownIds.add(raw);
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[FactoryOS] Unmapped KPI relation id: "${raw}". Add it to KPI_MULTILANG_MAP in notionMapper.ts.`
+      );
+    }
     return `KPI-${normalizeId(raw).substring(0, 5).toUpperCase()}`;
   }
+  // 4) Human-readable name from a Select/Text column → keep as-is.
   return raw;
 }
 
@@ -95,10 +124,9 @@ export function getCleanKpiName(
  * the UI gets a chance to localize it via getCleanKpiName).
  */
 export function resolveKpiName(relationId: string | undefined | null): string {
-  if (!relationId) return "Unknown KPI";
-  const raw = relationId.trim();
-  const hit = NORMALIZED_KPI_MAP[normalizeId(raw)];
-  return hit ? hit.en : raw;
+  // Single source of truth: reuse the full matching chain (direct → name →
+  // prefix) from getCleanKpiName so server and UI never disagree.
+  return getCleanKpiName(relationId, "en");
 }
 
 /** True when a string looks like a Notion UUID (with or without dashes). */

@@ -5,7 +5,7 @@ import { useStore } from "@/store/useStore";
 import { getTranslations } from "@/lib/i18n";
 import { useFactoryData } from "@/components/shared/DataProvider";
 import { Card, SectionHeader, StatCard, EmptyState } from "@/components/shared/ui";
-import ContextualAI from "@/components/shared/ContextualAI";
+import InventoryAiAssistant from "@/components/dashboard/InventoryAiAssistant";
 import { formatNumber, downloadCsv } from "@/lib/utils";
 import { Package, Download } from "lucide-react";
 import {
@@ -36,7 +36,10 @@ export default function InventoryRiskMonitor() {
     const expedite = items.filter((i) => /expedite/i.test(i.procurementSignal)).length;
     const belowSafety = items.filter((i) => i.currentStock < i.safetyStock).length;
     const totalReorder = items.reduce((s, i) => s + i.recommendedOrderQty, 0);
-    return { expedite, belowSafety, totalReorder, total: items.length };
+    const urgentMaterials = items
+      .filter((i) => /expedite/i.test(i.procurementSignal) || i.currentStock < i.safetyStock)
+      .map((i) => i.materialName);
+    return { expedite, belowSafety, totalReorder, total: items.length, urgentMaterials };
   }, [items]);
 
   const stockOutData = useMemo(
@@ -71,7 +74,7 @@ export default function InventoryRiskMonitor() {
         }
       />
 
-      <ContextualAI pageContext="inventory_risk" currentData={{ items: items.slice(0, 12), stats }} />
+      <InventoryAiAssistant stats={stats} />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label={t.expediteItems} value={stats.expedite} accent="var(--critical)" />
