@@ -5,8 +5,8 @@ import { useStore } from "@/store/useStore";
 import { getTranslations } from "@/lib/i18n";
 import { useFactoryData } from "@/components/shared/DataProvider";
 import { Card, SectionHeader, StatCard, EmptyState } from "@/components/shared/ui";
-import { formatCurrency, downloadCsv } from "@/lib/utils";
-import { ShieldCheck, FileText, CheckCircle, Download } from "lucide-react";
+import { formatCurrency, downloadCsv, shortRef } from "@/lib/utils";
+import { ShieldCheck, FileText, CheckCircle, Clock, User, Calendar, TrendingUp, Download } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -103,53 +103,92 @@ export default function ProgressEvidence() {
             <EmptyState message={t.noData} />
           </Card>
         ) : (
-          entries.map((ev) => (
-            <Card
-              key={ev.id}
-              className="p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
-            >
-              <div className="flex items-start gap-3">
-                <div className="p-2.5 bg-[var(--bg)] border border-[var(--border)] rounded-lg text-[var(--accent)]">
-                  <FileText size={20} />
-                </div>
-                <div>
-                  <span className="text-[10px] font-mono opacity-50">
-                    {ev.id} • {ev.sourceActionPlan}
-                  </span>
-                  <h4 className="font-bold text-sm mt-0.5">{ev.entryTitle}</h4>
-                  <p className="text-[11px] opacity-65 mt-1">
-                    {language === "ar" ? "المعتمد:" : "Verified by:"}{" "}
-                    <span className="font-semibold">{ev.verifiedBy || "—"}</span> ·{" "}
-                    <span className="font-mono">{ev.date}</span> ·{" "}
-                    {language === "ar" ? "التحسّن:" : "Improvement:"}{" "}
-                    <span className="font-mono text-[var(--success)]">{ev.improvementPct}%</span> ·{" "}
-                    {formatCurrency(ev.financialSaving)}
-                  </p>
-                  {ev.lessonLearned && (
-                    <p className="text-[11px] opacity-50 mt-1 italic">
-                      💡 {ev.lessonLearned}
-                    </p>
-                  )}
-                </div>
-              </div>
+          entries.map((ev) => {
+            const statusColor = ev.verified ? "var(--success)" : "var(--warning)";
+            return (
+              <Card
+                key={ev.id}
+                className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6"
+              >
+                <div className="flex items-start gap-4 flex-1">
+                  <div
+                    className="p-3 rounded-xl mt-0.5 flex-shrink-0"
+                    style={{
+                      color: statusColor,
+                      backgroundColor: `color-mix(in srgb, ${statusColor} 12%, transparent)`,
+                    }}
+                  >
+                    <FileText size={24} />
+                  </div>
 
-              <div className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full bg-[var(--bg)] border border-[var(--border)] flex-shrink-0">
-                <CheckCircle
-                  size={14}
-                  className={ev.verified ? "text-[var(--success)]" : "text-[var(--warning)]"}
-                />
-                <span style={{ color: ev.verified ? "var(--success)" : "var(--warning)" }}>
-                  {ev.verified
-                    ? language === "ar"
-                      ? "تم التحقق"
-                      : "Verified"
-                    : language === "ar"
-                    ? "قيد المراجعة"
-                    : "Pending"}
-                </span>
-              </div>
-            </Card>
-          ))
+                  <div className="space-y-3 w-full">
+                    {/* Clean reference tag instead of a faded raw UUID subtitle */}
+                    <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono">
+                      <span className="bg-[var(--bg)] px-2.5 py-1 rounded-md border border-[var(--border)] font-bold">
+                        {language === "ar" ? "مرجع:" : "REF:"} {shortRef(ev.id, "PR")}
+                      </span>
+                      {ev.sourceActionPlan && (
+                        <span className="bg-[var(--bg)] px-2.5 py-1 rounded-md border border-[var(--border)] font-bold opacity-80">
+                          {shortRef(ev.sourceActionPlan, "AP")}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Title: larger + bolder */}
+                    <h3 className="text-base font-extrabold tracking-wide leading-relaxed">
+                      {ev.entryTitle}
+                    </h3>
+
+                    {/* Audit details: bigger, high-contrast, spaced grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm font-medium bg-[var(--bg)] p-3 rounded-xl border border-[var(--border)]">
+                      <div className="flex items-center gap-1.5">
+                        <User size={15} className="text-[var(--accent)]" />
+                        <span>{ev.verifiedBy || "—"}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Calendar size={15} className="opacity-60" />
+                        <span className="font-mono">{ev.date || "—"}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 font-bold text-[var(--success)]">
+                        <TrendingUp size={15} />
+                        <span>
+                          {language === "ar" ? "تحسّن:" : "Imp:"} {ev.improvementPct}% ·{" "}
+                          {formatCurrency(ev.financialSaving)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {ev.lessonLearned && (
+                      <p className="text-sm leading-relaxed opacity-80 pt-1 border-s-2 border-[var(--border)] ps-3 italic">
+                        💡 {ev.lessonLearned}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Larger status badge */}
+                <div className="flex-shrink-0 self-start md:self-center">
+                  <span
+                    className="px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 border"
+                    style={{
+                      color: statusColor,
+                      borderColor: statusColor,
+                      backgroundColor: `color-mix(in srgb, ${statusColor} 12%, transparent)`,
+                    }}
+                  >
+                    {ev.verified ? <CheckCircle size={14} /> : <Clock size={14} />}
+                    {ev.verified
+                      ? language === "ar"
+                        ? "معتمد ومؤكد"
+                        : "Verified"
+                      : language === "ar"
+                      ? "قيد الانتظار"
+                      : "Pending"}
+                  </span>
+                </div>
+              </Card>
+            );
+          })
         )}
       </div>
     </div>

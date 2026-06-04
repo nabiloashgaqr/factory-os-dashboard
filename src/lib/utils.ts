@@ -1,8 +1,25 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { looksLikeNotionId } from "@/lib/notionMapper";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+/**
+ * Turns long, ugly identifiers into a clean reference tag for display.
+ *  - Notion UUIDs (e.g. "a46f6162-013b-83df-...") → "REF-A46F" with prefix.
+ *  - Already-tidy IDs (e.g. "AP-01", "PR-002")     → returned unchanged.
+ *  - Empty / Notion page ids                       → graceful fallback.
+ */
+export function shortRef(id: string | undefined | null, prefix = "REF"): string {
+  if (!id) return `${prefix}-—`;
+  const raw = id.trim();
+  if (looksLikeNotionId(raw)) {
+    const hex = raw.replace(/-/g, "").toUpperCase();
+    return `${prefix}-${hex.substring(0, 4)}`;
+  }
+  return raw;
 }
 
 export function formatCurrency(n: number): string {

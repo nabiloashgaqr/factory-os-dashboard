@@ -5,8 +5,9 @@ import { useStore } from "@/store/useStore";
 import { getTranslations } from "@/lib/i18n";
 import { useFactoryData } from "@/components/shared/DataProvider";
 import { Card, SectionHeader, StatCard, EmptyState, Badge } from "@/components/shared/ui";
+import { getCleanKpiName } from "@/lib/notionMapper";
 import ContextualAI from "@/components/shared/ContextualAI";
-import { formatCurrency, downloadCsv } from "@/lib/utils";
+import { formatCurrency, downloadCsv, shortRef } from "@/lib/utils";
 import { CheckSquare, Download, AlertTriangle } from "lucide-react";
 import {
   BarChart,
@@ -120,43 +121,50 @@ export default function ActionPlanControl() {
         {actions.length === 0 ? (
           <EmptyState message={t.noData} />
         ) : (
-          <table className="w-full text-xs border-collapse">
+          <table className="w-full text-sm border-collapse">
             <thead>
-              <tr className="opacity-60 border-b border-[var(--border)]">
-                <th className="py-2 text-start">{language === "ar" ? "المبادرة" : "Initiative"}</th>
-                <th className="py-2 text-start">{language === "ar" ? "المؤشر" : "Target KPI"}</th>
-                <th className="py-2 text-start">{t.owner}</th>
-                <th className="py-2 text-center">{t.status}</th>
-                <th className="py-2 text-center">{t.priority}</th>
-                <th className="py-2 text-center">{language === "ar" ? "النهاية" : "End"}</th>
-                <th className="py-2 text-end">{language === "ar" ? "التنفيذ" : "Exec %"}</th>
-                <th className="py-2 text-end">ROI</th>
+              <tr className="text-xs font-bold opacity-60 border-b border-[var(--border)]">
+                <th className="py-3 px-2 text-center">ID</th>
+                <th className="py-3 px-2 text-start">{language === "ar" ? "المبادرة التصحيحية" : "Initiative"}</th>
+                <th className="py-3 px-2 text-start">{language === "ar" ? "المؤشر المستهدف" : "Target KPI"}</th>
+                <th className="py-3 px-2 text-start">{t.owner}</th>
+                <th className="py-3 px-2 text-center">{t.status}</th>
+                <th className="py-3 px-2 text-center">{t.priority}</th>
+                <th className="py-3 px-2 text-center">{language === "ar" ? "النهاية" : "End"}</th>
+                <th className="py-3 px-2 text-end">{language === "ar" ? "الإنجاز" : "Exec %"}</th>
+                <th className="py-3 px-2 text-end">ROI</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-[var(--border)]">
               {actions.map((a) => {
                 const overdue = isOverdue(a.endDate, a.status);
+                const kpiName = getCleanKpiName(a.targetKpi, language);
                 return (
                   <tr
                     key={a.id}
-                    className="border-b border-[var(--border)] last:border-none hover:bg-[var(--bg)] transition-colors"
+                    className="hover:bg-[var(--bg)] transition-colors"
                     style={overdue ? { backgroundColor: "color-mix(in srgb, var(--critical) 6%, transparent)" } : undefined}
                   >
-                    <td className="py-2 font-semibold flex items-center gap-1.5">
-                      {(overdue || a.escalationRequired) && (
-                        <AlertTriangle size={13} className="text-[var(--critical)]" />
-                      )}
-                      {a.initiative}
+                    <td className="py-4 px-2 text-center font-mono text-sm font-bold text-[var(--accent)]">
+                      {shortRef(a.id, "AP")}
                     </td>
-                    <td className="py-2">{a.targetKpi}</td>
-                    <td className="py-2 opacity-80">{a.owner}</td>
-                    <td className="py-2 text-center">{a.status}</td>
-                    <td className="py-2 text-center">
+                    <td className="py-4 px-2 font-extrabold leading-relaxed max-w-sm">
+                      <span className="flex items-center gap-1.5">
+                        {(overdue || a.escalationRequired) && (
+                          <AlertTriangle size={14} className="text-[var(--critical)] flex-shrink-0" />
+                        )}
+                        {a.initiative}
+                      </span>
+                    </td>
+                    <td className="py-4 px-2 font-bold opacity-95">{kpiName}</td>
+                    <td className="py-4 px-2 opacity-80">{a.owner}</td>
+                    <td className="py-4 px-2 text-center">{a.status}</td>
+                    <td className="py-4 px-2 text-center">
                       <Badge color={priorityColor(a.priority)}>{a.priority}</Badge>
                     </td>
-                    <td className="py-2 text-center font-mono">{a.endDate || "—"}</td>
-                    <td className="py-2 text-end font-mono">{a.executionPct}%</td>
-                    <td className="py-2 text-end font-mono text-[var(--success)]">
+                    <td className="py-4 px-2 text-center font-mono">{a.endDate || "—"}</td>
+                    <td className="py-4 px-2 text-end font-mono text-base font-black">{a.executionPct}%</td>
+                    <td className="py-4 px-2 text-end font-mono text-base font-black text-[var(--success)]">
                       {formatCurrency(a.projectedRoi)}
                     </td>
                   </tr>
