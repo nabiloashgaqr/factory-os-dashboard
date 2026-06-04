@@ -11,7 +11,9 @@ import {
 } from "@/lib/kpiProcessor";
 import { Card, SectionHeader, StatCard, Spinner, EmptyState } from "@/components/shared/ui";
 import ContextualAI from "@/components/shared/ContextualAI";
+import { getCleanKpiName } from "@/lib/notionMapper";
 import { formatCurrency } from "@/lib/utils";
+import { ArrowUpRight, TrendingDown } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -22,6 +24,14 @@ import {
   CartesianGrid,
   Legend,
 } from "recharts";
+
+// KPIs where a LOWER value is better → invert the "critical" comparison.
+const LOWER_IS_BETTER = /scrap|defect|waste|downtime|mttr|cycle|changeover|عيوب|هدر|توقف|تبديل|دورة/i;
+
+function isKpiCritical(name: string, actual: number, target: number): boolean {
+  if (!target) return false;
+  return LOWER_IS_BETTER.test(name) ? actual > target : actual < target;
+}
 
 export default function ExecutiveOverview() {
   const { language } = useStore();
@@ -143,25 +153,81 @@ export default function ExecutiveOverview() {
         />
       </div>
 
-      {/* Aggregated KPI cards (dynamic per KPI Master Link variable) */}
+      {/* Aggregated KPI cards (dynamic per KPI Master Link variable).
+          Wide layout · large fonts · no truncation · status color bar ·
+          bilingual names · control-room readability. */}
       {aggregated.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {aggregated.map((kpi) => (
-            <Card key={kpi.kpiName} className="p-4">
-              <span className="text-[10px] font-mono opacity-50 block uppercase tracking-wider truncate">
-                {kpi.kpiName}
-              </span>
-              <div className="flex items-baseline gap-1 mt-2">
-                <span className="text-2xl font-black font-mono text-[var(--accent)]">
-                  {kpi.averageActualValue}
-                </span>
-                <span className="text-[10px] opacity-70">{kpi.unit}</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {aggregated.map((kpi) => {
+            const localizedTitle = getCleanKpiName(kpi.kpiName, language);
+            const critical = isKpiCritical(
+              kpi.kpiName,
+              kpi.averageActualValue,
+              kpi.targetValue
+            );
+            const statusColor = critical ? "var(--critical)" : "var(--success)";
+            const sideClass = language === "ar" ? "right-0" : "left-0";
+            const padClass = language === "ar" ? "pr-4" : "pl-4";
+
+            return (
+              <div
+                key={kpi.kpiName}
+                className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-200 flex flex-col justify-between min-h-[180px] relative overflow-hidden"
+              >
+                {/* Status color bar — instant at-a-glance health */}
+                <div
+                  className={`absolute top-0 bottom-0 ${sideClass} w-2`}
+                  style={{ backgroundColor: statusColor }}
+                />
+
+                <div className={`${padClass} space-y-3`}>
+                  {/* KPI name: large, wraps freely, no ellipsis */}
+                  <h4 className="text-base font-bold opacity-80 tracking-wide leading-relaxed min-h-[44px]">
+                    {localizedTitle}
+                  </h4>
+
+                  {/* Current averaged value: oversized for the factory floor */}
+                  <div className="flex items-baseline gap-2">
+                    <span
+                      className="text-4xl font-black font-mono tracking-tight"
+                      style={{ color: statusColor }}
+                    >
+                      {kpi.averageActualValue}
+                    </span>
+                    <span className="text-sm font-bold opacity-60 uppercase">
+                      {kpi.unit || ""}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Comparison footer: enlarged target + samples badge */}
+                <div
+                  className={`mt-4 pt-3 border-t border-[var(--border)] ${padClass} flex items-center justify-between text-xs`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span className="opacity-50">{t.target}:</span>
+                    <span className="font-bold text-sm">
+                      {kpi.targetValue}
+                      {kpi.unit || ""}
+                    </span>
+                  </div>
+
+                  <div
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-extrabold"
+                    style={{
+                      color: statusColor,
+                      backgroundColor: `color-mix(in srgb, ${statusColor} 14%, transparent)`,
+                    }}
+                  >
+                    {critical ? <TrendingDown size={12} /> : <ArrowUpRight size={12} />}
+                    <span>
+                      {kpi.readingCount} {t.samples}
+                    </span>
+                  </div>
+                </div>
               </div>
-              <p className="text-[9px] opacity-50 mt-1 border-t border-[var(--border)] pt-1">
-                {t.target}: {kpi.targetValue} · {t.samples}: {kpi.readingCount}
-              </p>
-            </Card>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -189,7 +255,13 @@ export default function ExecutiveOverview() {
                 margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
-                <XAxis dataKey="kpiName" stroke="var(--text)" fontSize={10} tickLine={false} />
+                <XAxis
+                  dataKey="kpiName"
+                  stroke="var(--text)"
+                  fontSize={10}
+                  tickLine={false}
+                  tickFormatter={(v: string) => getCleanKpiName(v, language)}
+                />
                 <YAxis stroke="var(--text)" fontSize={10} tickLine={false} />
                 <Tooltip
                   cursor={{ fill: "transparent" }}

@@ -15,37 +15,90 @@
 // is available. The map is dash/case-insensitive.
 // ───────────────────────────────────────────────────────────
 
-// Hardcoded mapping extracted directly from the live FactoryOS workspace.
+// Hardcoded BILINGUAL mapping extracted directly from the live FactoryOS
+// workspace. Each ID maps to a clean English AND Arabic name so the two
+// languages never bleed into one another in the UI.
 // Keys are normalized (lowercase, no dashes) at lookup time, so you can
 // add new entries with or without hyphens — both will match.
-const KPI_ID_MAP: Record<string, string> = {
-  "c33f6162-013b-8225-8e53-816a5de63ea7": "OEE (كفاءة المعدات)",
-  "1c8f6162-013b-82a9-8e15-816609db89de": "Cycle Time (زمن الدورة)",
-  "a46f6162-013b-83df-aa79-81510ace7774": "Changeover Time (وقت التبديل)",
-  "683f6162-013b-833b-8669-0155a902e8ce": "Defect Rate (DPMO) (معدل العيوب)",
-  "dbdf6162-013b-82d5-b9fa-011cc8ec600c": "Throughput (معدل الإنتاجية)",
-  "5dbf6162-013b-82b8-94b3-013c96eba9ad": "MTTR / Downtime (زمن التوقف)",
-  "017f6162-013b-83bc-adcc-818a03cb3904": "Quality Defect Containment",
-};
+export type LangCode = "ar" | "en";
 
-// Pre-normalize the dictionary once for O(1), dash-insensitive lookups.
-const NORMALIZED_KPI_MAP: Record<string, string> = Object.fromEntries(
-  Object.entries(KPI_ID_MAP).map(([id, name]) => [normalizeId(id), name])
-);
+const KPI_MULTILANG_MAP: Record<string, { en: string; ar: string }> = {
+  "c33f6162-013b-8225-8e53-816a5de63ea7": { en: "OEE Efficiency", ar: "كفاءة المعدات الكلية" },
+  "1c8f6162-013b-82a9-8e15-816609db89de": { en: "Cycle Time", ar: "زمن الدورة الإنتاجية" },
+  "a46f6162-013b-83df-aa79-81510ace7774": { en: "Changeover Time", ar: "وقت التبديل والتجهيز" },
+  "683f6162-013b-833b-8669-0155a902e8ce": { en: "Defect Rate (DPMO)", ar: "معدل العيوب والتصنيع" },
+  "dbdf6162-013b-82d5-b9fa-011cc8ec600c": { en: "Throughput Speed", ar: "معدل التدفق والإنتاجية" },
+  "5dbf6162-013b-82b8-94b3-013c96eba9ad": { en: "MTTR / Downtime", ar: "زمن التوقف وإصلاح الأعطال" },
+  "017f6162-013b-83bc-adcc-818a03cb3904": { en: "Quality Containment", ar: "احتواء عيوب الجودة" },
+  // New IDs extracted from the KPI summary screen
+  "532f6162-013b-8289-9d49-019c22747896": { en: "Availability Rate", ar: "معدل جاهزية الخطوط" },
+  "5aaf6162-013b-8343-bc53-019c22747896": { en: "Performance Rate", ar: "معدل الأداء التشغيلي" },
+  "e90f6162-013b-82fb-aa79-81510ace7774": { en: "Scrap Rate / Waste", ar: "معدل الهدر والنفاية" },
+};
 
 function normalizeId(id: string): string {
   return id.toLowerCase().replace(/-/g, "").trim();
 }
 
+// Pre-normalize the dictionary once for O(1), dash-insensitive lookups.
+const NORMALIZED_KPI_MAP: Record<string, { en: string; ar: string }> =
+  Object.fromEntries(
+    Object.entries(KPI_MULTILANG_MAP).map(([id, names]) => [normalizeId(id), names])
+  );
+
+// Reverse index: readable name (en OR ar, lowercased) → bilingual pair.
+// Lets the UI re-localize a card even after data was aggregated by the
+// English label (the server resolves IDs → English before aggregation).
+const NAME_TO_PAIR: Record<string, { en: string; ar: string }> = (() => {
+  const out: Record<string, { en: string; ar: string }> = {};
+  for (const names of Object.values(KPI_MULTILANG_MAP)) {
+    out[names.en.toLowerCase()] = names;
+    out[names.ar.toLowerCase()] = names;
+  }
+  return out;
+})();
+
 /**
- * Smart resolver: turns any cryptic Notion relation ID into its readable
- * KPI name. Falls back to the raw ID if it is not in the dictionary, so
- * nothing is ever lost.
+ * Resolve a Notion relation ID (or already-readable name) to a clean,
+ * language-aware KPI name.
+ *  - Known ID            → localized name for the active language.
+ *  - Already a real name → returned unchanged (no mangling of "Scrap Rate").
+ *  - Unknown raw ID      → tidy "KPI-XXXXX" placeholder so no long UUID leaks.
+ */
+export function getCleanKpiName(
+  relationId: string | undefined | null,
+  lang: LangCode = "en"
+): string {
+  if (!relationId) return lang === "ar" ? "مؤشر غير معروف" : "Unknown KPI";
+  const raw = relationId.trim();
+
+  // 1) Direct ID match.
+  const byId = NORMALIZED_KPI_MAP[normalizeId(raw)];
+  if (byId) return lang === "ar" ? byId.ar : byId.en;
+
+  // 2) Already a readable name (en or ar) → re-localize to active language.
+  const byName = NAME_TO_PAIR[raw.toLowerCase()];
+  if (byName) return lang === "ar" ? byName.ar : byName.en;
+
+  // 3) Only shorten genuine Notion IDs; leave human-readable names intact
+  //    (so "Scrap Rate" / "OEE" coming straight from a Select column survive).
+  if (looksLikeNotionId(raw)) {
+    return `KPI-${normalizeId(raw).substring(0, 5).toUpperCase()}`;
+  }
+  return raw;
+}
+
+/**
+ * Language-agnostic resolver kept for the server/data layer (route.ts and
+ * readText). Returns the English label for known IDs, the original string
+ * for real names, and the raw ID otherwise (so nothing is ever lost before
+ * the UI gets a chance to localize it via getCleanKpiName).
  */
 export function resolveKpiName(relationId: string | undefined | null): string {
   if (!relationId) return "Unknown KPI";
-  const clean = relationId.trim();
-  return NORMALIZED_KPI_MAP[normalizeId(clean)] || clean;
+  const raw = relationId.trim();
+  const hit = NORMALIZED_KPI_MAP[normalizeId(raw)];
+  return hit ? hit.en : raw;
 }
 
 /** True when a string looks like a Notion UUID (with or without dashes). */
