@@ -9,6 +9,7 @@ import { useFactoryData } from "@/components/shared/DataProvider";
 import { Clock, Database, Sparkles, RefreshCw, Repeat, Bot, FileDown } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import AiContextSidebar from "@/components/shared/AiContextSidebar";
+import NotificationBell from "@/components/layout/NotificationBell";
 
 export default function TopBanner() {
   const store = useStore();
@@ -110,6 +111,9 @@ export default function TopBanner() {
             {t.autoSync}: {autoSyncInterval}m
           </div>
         )}
+
+        {/* Critical task notifications */}
+        <NotificationBell />
 
         {/* Export the whole dashboard to PDF */}
         <button
