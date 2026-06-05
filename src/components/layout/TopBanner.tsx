@@ -12,7 +12,7 @@ import AiContextSidebar from "@/components/shared/AiContextSidebar";
 
 export default function TopBanner() {
   const store = useStore();
-  const { language, syncStatus, lastSync, notionToken, aiProvider, autoSync, autoSyncInterval, usingCache, isAiSidebarOpen, setIsAiSidebarOpen } =
+  const { language, syncStatus, lastSync, notionToken, aiProvider, autoSync, autoSyncInterval, usingCache, isAiSidebarOpen, setIsAiSidebarOpen, companyName, companyLogo } =
     store;
   const t = getTranslations(language);
   const { refresh, loading } = useFactoryData();
@@ -55,20 +55,29 @@ export default function TopBanner() {
 
   return (
     <header className="h-14 flex items-center justify-between px-4 md:px-6 bg-[var(--card)] border-b border-[var(--border)] text-sm sticky top-0 z-50">
-      {/* Logo + title */}
+      {/* Logo + title (custom company branding overrides the defaults) */}
       <div className="flex items-center gap-3 font-semibold tracking-wide min-w-0">
         <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-[var(--border)] flex-shrink-0">
-          <Image
-            src="/logo.png"
-            alt="FactoryOS Logo"
-            fill
-            sizes="32px"
-            className="object-cover"
-            priority
-          />
+          {companyLogo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={companyLogo}
+              alt={companyName || "Company Logo"}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <Image
+              src="/logo.png"
+              alt="FactoryOS Logo"
+              fill
+              sizes="32px"
+              className="object-cover"
+              priority
+            />
+          )}
         </div>
         <span className="text-sm md:text-base font-bold text-[var(--text)] truncate">
-          {t.appTitle}
+          {companyName || t.appTitle}
         </span>
       </div>
 

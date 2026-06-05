@@ -17,6 +17,8 @@ import {
   XCircle,
   Loader2,
   RefreshCw,
+  ImagePlus,
+  Trash2,
 } from "lucide-react";
 
 type TestState = "idle" | "loading" | "ok" | "fail";
@@ -129,6 +131,24 @@ export default function SettingsPanel() {
     }
   };
 
+  // Read an uploaded logo as a data URL (stored in the browser only).
+  const onLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return;
+    if (file.size > 512 * 1024) {
+      alert(
+        s.language === "ar"
+          ? "حجم الشعار كبير. الرجاء اختيار صورة أقل من 512KB."
+          : "Logo too large. Please pick an image under 512KB."
+      );
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => s.setCompanyLogo(String(reader.result || ""));
+    reader.readAsDataURL(file);
+  };
+
   const inputCls =
     "w-full bg-[var(--bg)] border border-[var(--border)] rounded-lg p-2.5 text-sm outline-none focus:border-[var(--accent)] font-mono";
   const labelCls = "block text-xs opacity-70 mb-1.5";
@@ -177,6 +197,60 @@ export default function SettingsPanel() {
               <option value="ar">العربية (RTL)</option>
               <option value="en">English (LTR)</option>
             </select>
+          </div>
+        </div>
+      </Card>
+
+      {/* Branding (white-label) */}
+      <Card className="p-6 space-y-4">
+        <h3 className="font-bold text-sm flex items-center gap-2 text-[var(--accent)] uppercase tracking-wider">
+          <ImagePlus size={16} /> {s.language === "ar" ? "هوية الشركة" : "Company Branding"}
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className={labelCls}>
+              {s.language === "ar" ? "اسم الشركة (يظهر بالأعلى)" : "Company Name (shown in header)"}
+            </label>
+            <input
+              type="text"
+              value={s.companyName}
+              onChange={(e) => s.setCompanyName(e.target.value)}
+              placeholder={s.language === "ar" ? "مثال: مصانع الرواد" : "e.g. Acme Manufacturing"}
+              className={inputCls.replace("font-mono", "")}
+            />
+            <p className="text-[10px] opacity-50 mt-1.5">
+              {s.language === "ar"
+                ? "اتركه فارغاً لاستخدام الاسم الافتراضي FactoryOS™."
+                : "Leave empty to use the default FactoryOS™ name."}
+            </p>
+          </div>
+
+          <div>
+            <label className={labelCls}>
+              {s.language === "ar" ? "شعار الشركة (PNG/SVG ≤ 512KB)" : "Company Logo (PNG/SVG ≤ 512KB)"}
+            </label>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-lg border border-[var(--border)] bg-[var(--bg)] overflow-hidden flex items-center justify-center flex-shrink-0">
+                {s.companyLogo ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={s.companyLogo} alt="logo preview" className="w-full h-full object-cover" />
+                ) : (
+                  <ImagePlus size={18} className="opacity-40" />
+                )}
+              </div>
+              <label className="cursor-pointer text-xs bg-[var(--border)] hover:bg-[var(--accent)] hover:text-[var(--bg)] px-3 py-2 rounded-lg font-medium transition-colors">
+                {s.language === "ar" ? "رفع شعار" : "Upload logo"}
+                <input type="file" accept="image/*" onChange={onLogoUpload} className="hidden" />
+              </label>
+              {s.companyLogo && (
+                <button
+                  onClick={() => s.setCompanyLogo("")}
+                  className="flex items-center gap-1 text-xs text-[var(--critical)] hover:opacity-80"
+                >
+                  <Trash2 size={13} /> {s.language === "ar" ? "إزالة" : "Remove"}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </Card>

@@ -18,6 +18,10 @@ interface Settings {
   language: Language;
   theme: ThemeName;
 
+  // Branding (white-label)
+  companyName: string;
+  companyLogo: string; // data URL (stored in browser only)
+
   // Notion
   notionToken: string;
   kpiDbId: string;
@@ -51,6 +55,8 @@ interface RuntimeState {
 interface Actions {
   setLanguage: (lang: Language) => void;
   setTheme: (theme: ThemeName) => void;
+  setCompanyName: (v: string) => void;
+  setCompanyLogo: (v: string) => void;
 
   // Generic credential / setting setters
   setCredentials: (keys: Partial<Settings>) => void;
@@ -84,6 +90,8 @@ export type AppState = Settings & RuntimeState & Actions;
 const defaultSettings: Settings = {
   language: "ar",
   theme: "executive-dark",
+  companyName: "",
+  companyLogo: "",
   notionToken: "",
   kpiDbId: "",
   actionDbId: "",
@@ -115,6 +123,8 @@ export const useStore = create<AppState>()(
 
       setLanguage: (language) => set({ language }),
       setTheme: (theme) => set({ theme }),
+      setCompanyName: (companyName) => set({ companyName }),
+      setCompanyLogo: (companyLogo) => set({ companyLogo }),
 
       setCredentials: (keys) => set((state) => ({ ...state, ...keys })),
 
@@ -154,6 +164,8 @@ export const useStore = create<AppState>()(
       partialize: (state) => ({
         language: state.language,
         theme: state.theme,
+        companyName: state.companyName,
+        companyLogo: state.companyLogo,
         notionToken: state.notionToken,
         kpiDbId: state.kpiDbId,
         actionDbId: state.actionDbId,
