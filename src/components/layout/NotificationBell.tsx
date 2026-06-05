@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useStore } from "@/store/useStore";
 import { useFactoryData } from "@/components/shared/DataProvider";
 import { buildNotifications, type NotifSeverity } from "@/lib/notifications";
-import { Bell, AlertTriangle, AlertCircle, Info, CheckCircle2 } from "lucide-react";
+import { useCreateAction } from "@/lib/useCreateAction";
+import { Bell, AlertTriangle, AlertCircle, Info, CheckCircle2, Plus, Loader2, Check } from "lucide-react";
 
 const sevColor: Record<NotifSeverity, string> = {
   critical: "var(--critical)",
@@ -21,13 +22,27 @@ function SevIcon({ s, size = 16 }: { s: NotifSeverity; size?: number }) {
 export default function NotificationBell() {
   const { language, setActiveTab } = useStore();
   const { data, filters } = useFactoryData();
+  const { createAction, canCreate } = useCreateAction();
   const [open, setOpen] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [createdIds, setCreatedIds] = useState<Record<string, boolean>>({});
   const ref = useRef<HTMLDivElement>(null);
 
   const notifications = useMemo(
     () => buildNotifications(data, filters, language),
     [data, filters, language]
   );
+
+  const handleCreate = async (n: { id: string; title: string; detail: string; severity: string }) => {
+    setBusyId(n.id);
+    const res = await createAction({
+      title: `${n.title} — ${language === "ar" ? "إجراء فوري" : "Immediate action"}`,
+      priority: n.severity === "critical" ? "Critical" : "High",
+      notes: `${language === "ar" ? "مصدر: إشعار حرج" : "Source: Critical notification"}.\n${n.detail}`,
+    });
+    if (res.success) setCreatedIds((m) => ({ ...m, [n.id]: true }));
+    setBusyId(null);
+  };
   const count = notifications.length;
 
   // Close on outside click
@@ -81,27 +96,59 @@ export default function NotificationBell() {
               </div>
             ) : (
               notifications.map((n) => (
-                <button
+                <div
                   key={n.id}
-                  onClick={() => {
-                    setActiveTab(n.tab);
-                    setOpen(false);
-                  }}
-                  className="w-full text-start flex items-start gap-3 px-4 py-3 border-b border-[var(--border)] last:border-none hover:bg-[var(--bg)] transition-colors"
+                  className="px-4 py-3 border-b border-[var(--border)] last:border-none hover:bg-[var(--bg)] transition-colors"
                   style={{
                     borderInlineStartWidth: 3,
                     borderInlineStartStyle: "solid",
                     borderInlineStartColor: sevColor[n.severity],
                   }}
                 >
-                  <span className="mt-0.5 flex-shrink-0">
-                    <SevIcon s={n.severity} />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-sm font-bold">{n.title}</span>
-                    <span className="block text-xs opacity-75 leading-relaxed">{n.detail}</span>
-                  </span>
-                </button>
+                  <button
+                    onClick={() => {
+                      setActiveTab(n.tab);
+                      setOpen(false);
+                    }}
+                    className="w-full text-start flex items-start gap-3"
+                  >
+                    <span className="mt-0.5 flex-shrink-0">
+                      <SevIcon s={n.severity} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-bold">{n.title}</span>
+                      <span className="block text-xs opacity-75 leading-relaxed">{n.detail}</span>
+                    </span>
+                  </button>
+
+                  {canCreate && (
+                    <div className="mt-2 ps-7">
+                      {createdIds[n.id] ? (
+                        <span
+                          className="text-[10px] font-bold flex items-center gap-1"
+                          style={{ color: "var(--success)" }}
+                        >
+                          <Check size={11} />
+                          {language === "ar" ? "تم الإنشاء في Notion" : "Created in Notion"}
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleCreate(n)}
+                          disabled={busyId === n.id}
+                          className="flex items-center gap-1.5 text-[10px] font-bold rounded-md px-2 py-1 transition-all disabled:opacity-60"
+                          style={{ color: "var(--bg)", backgroundColor: "var(--success)" }}
+                        >
+                          {busyId === n.id ? (
+                            <Loader2 size={11} className="animate-spin" />
+                          ) : (
+                            <Plus size={11} />
+                          )}
+                          {language === "ar" ? "إنشاء خطة عمل" : "Create action plan"}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
               ))
             )}
           </div>

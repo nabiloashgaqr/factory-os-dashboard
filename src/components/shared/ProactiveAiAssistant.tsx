@@ -4,12 +4,23 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useStore } from "@/store/useStore";
 import { useFactoryData } from "@/components/shared/DataProvider";
 import { useAI } from "@/lib/useAI";
+import { useCreateAction } from "@/lib/useCreateAction";
 import {
   applyKpiFilters,
   aggregateKpiMeasurements,
   countByAlert,
 } from "@/lib/kpiProcessor";
-import { ShieldCheck, BellRing, Eye, Lightbulb, Sparkles, RefreshCw } from "lucide-react";
+import {
+  ShieldCheck,
+  BellRing,
+  Eye,
+  Lightbulb,
+  Sparkles,
+  RefreshCw,
+  Plus,
+  Loader2,
+  Check,
+} from "lucide-react";
 
 interface Quad {
   check: string;
@@ -29,8 +40,11 @@ export default function ProactiveAiAssistant() {
   const { language, activeTab } = useStore();
   const { data, filters } = useFactoryData();
   const { generate, ready } = useAI();
+  const { createAction, canCreate } = useCreateAction();
   const [quad, setQuad] = useState<Quad | null>(null);
   const [loading, setLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createMsg, setCreateMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   const { title, snapshot, fallback } = useMemo(() => {
     const rows = applyKpiFilters(data.kpis, filters);
@@ -180,6 +194,33 @@ export default function ProactiveAiAssistant() {
 
   const view = quad || fallback;
 
+  const handleCreateAction = async () => {
+    setCreating(true);
+    setCreateMsg(null);
+    const priorityMap: Record<string, string> = {
+      overview: "High",
+      kpi_intel: "High",
+      inventory: "Critical",
+      actions: "High",
+      evidence: "Medium",
+    };
+    const res = await createAction({
+      title:
+        (language === "ar" ? "إجراء مقترح: " : "AI Action: ") +
+        view.recommend.slice(0, 120),
+      priority: priorityMap[activeTab] || "High",
+      notes:
+        `${language === "ar" ? "مصدر: المساعد الذكي" : "Source: AI Assistant"} (${activeTab}).\n` +
+        `${view.recommend}`,
+    });
+    setCreateMsg(
+      res.success
+        ? { ok: true, text: language === "ar" ? "تم إنشاء خطة العمل في Notion ✓" : "Action plan created in Notion ✓" }
+        : { ok: false, text: res.error || (language === "ar" ? "تعذّر الإنشاء" : "Failed") }
+    );
+    setCreating(false);
+  };
+
   // Page-specific tile labels (fall back to the generic 4 for other pages).
   const labelSets: Record<
     string,
@@ -290,6 +331,35 @@ export default function ProactiveAiAssistant() {
               <span>{tile.label}</span>
             </div>
             <p className="text-xs font-semibold leading-relaxed opacity-90">{tile.body}</p>
+
+            {tile.key === "recommend" && canCreate && (
+              <button
+                onClick={handleCreateAction}
+                disabled={creating}
+                className="mt-2 w-full flex items-center justify-center gap-1.5 text-[11px] font-bold rounded-lg py-1.5 transition-all disabled:opacity-60"
+                style={{
+                  color: "var(--bg)",
+                  backgroundColor: "var(--success)",
+                }}
+              >
+                {creating ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : (
+                  <Plus size={13} />
+                )}
+                {language === "ar" ? "إنشاء خطة عمل في Notion" : "Create Action in Notion"}
+              </button>
+            )}
+
+            {tile.key === "recommend" && createMsg && (
+              <p
+                className="text-[10px] font-bold flex items-center gap-1 mt-1"
+                style={{ color: createMsg.ok ? "var(--success)" : "var(--critical)" }}
+              >
+                {createMsg.ok && <Check size={11} />}
+                {createMsg.text}
+              </p>
+            )}
           </div>
         ))}
       </div>

@@ -5,7 +5,8 @@ import { useStore } from "@/store/useStore";
 import { useAI } from "@/lib/useAI";
 import { getTranslations } from "@/lib/i18n";
 import { Card, SectionHeader } from "@/components/shared/ui";
-import { Mic, Square, Sparkles, Send, AlertCircle } from "lucide-react";
+import { Mic, Square, Sparkles, Send, AlertCircle, Loader2, Check } from "lucide-react";
+import { useCreateAction } from "@/lib/useCreateAction";
 
 interface StructuredLog {
   line: string;
@@ -17,6 +18,7 @@ interface StructuredLog {
 export default function VoiceShiftLog() {
   const { language } = useStore();
   const { generate, ready } = useAI();
+  const { createAction, canCreate } = useCreateAction();
   const t = getTranslations(language);
 
   const [isRecording, setIsRecording] = useState(false);
@@ -24,9 +26,35 @@ export default function VoiceShiftLog() {
   const [structured, setStructured] = useState<StructuredLog | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [committing, setCommitting] = useState(false);
+  const [committed, setCommitted] = useState(false);
   const recognitionRef = useRef<any>(null);
 
   const enabled = ready;
+
+  // Commit the structured voice log to Notion as an Action Plan entry.
+  const commitToNotion = async () => {
+    if (!structured) return;
+    setCommitting(true);
+    setError(null);
+    const res = await createAction({
+      title:
+        (language === "ar" ? "بلاغ ميداني: " : "Field log: ") +
+        `${structured.line} — ${structured.category}`.slice(0, 160),
+      priority: "High",
+      notes:
+        `${language === "ar" ? "مصدر: السجل الصوتي الذكي" : "Source: Voice Shift Log"}\n` +
+        `Line: ${structured.line}\nCategory: ${structured.category}\n` +
+        (structured.timestamp ? `Time: ${structured.timestamp}\n` : "") +
+        `\n${structured.summary}`,
+    });
+    if (res.success) {
+      setCommitted(true);
+    } else {
+      setError(res.error || (language === "ar" ? "تعذّر الترحيل" : "Commit failed"));
+    }
+    setCommitting(false);
+  };
 
   const startRecording = () => {
     const SpeechRecognition =
@@ -77,6 +105,7 @@ export default function VoiceShiftLog() {
       if (json.success) {
         const clean = json.text.replace(/```json|```/g, "").trim();
         setStructured(JSON.parse(clean));
+        setCommitted(false);
       } else {
         throw new Error(json.error);
       }
@@ -149,6 +178,7 @@ export default function VoiceShiftLog() {
                 onClick={() => {
                   setTranscript("");
                   setStructured(null);
+                  setCommitted(false);
                 }}
                 className="text-xs opacity-60 hover:opacity-100 underline"
               >
@@ -193,10 +223,29 @@ export default function VoiceShiftLog() {
             )}
           </div>
           {structured && (
-            <button className="w-full flex items-center justify-center gap-2 bg-[var(--success)] text-white font-bold py-2.5 rounded-lg text-sm mt-4">
-              <Send size={15} />
-              {language === "ar" ? "ترحيل لقاعدة بيانات نوشن" : "Commit Entry to Notion"}
-            </button>
+            committed ? (
+              <div className="w-full flex items-center justify-center gap-2 bg-success-soft text-[var(--success)] font-bold py-2.5 rounded-lg text-sm mt-4 border border-[var(--success)]">
+                <Check size={15} />
+                {language === "ar" ? "تم الترحيل إلى Notion ✓" : "Committed to Notion ✓"}
+              </div>
+            ) : canCreate ? (
+              <button
+                onClick={commitToNotion}
+                disabled={committing}
+                className="w-full flex items-center justify-center gap-2 bg-[var(--success)] text-white font-bold py-2.5 rounded-lg text-sm mt-4 hover:opacity-90 transition-opacity disabled:opacity-60"
+              >
+                {committing ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+                {committing
+                  ? language === "ar" ? "جارٍ الترحيل..." : "Committing..."
+                  : language === "ar" ? "ترحيل لقاعدة بيانات نوشن" : "Commit Entry to Notion"}
+              </button>
+            ) : (
+              <p className="text-[11px] opacity-60 text-center mt-4">
+                {language === "ar"
+                  ? "هيّئ مفاتيح Notion في الإعدادات لتفعيل الترحيل."
+                  : "Configure Notion in Settings to enable committing."}
+              </p>
+            )
           )}
         </Card>
       </div>
