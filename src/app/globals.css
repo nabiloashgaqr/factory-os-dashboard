@@ -121,3 +121,44 @@
     background-color: color-mix(in srgb, var(--critical) 12%, transparent);
   }
 }
+
+/* ── Print / Export-to-PDF: hide chrome, expand content ───────────── */
+@media print {
+  /* Hide the top banner and side navigation */
+  header,
+  nav,
+  [data-print="hide"] {
+    display: none !important;
+  }
+
+  /* Let the whole dashboard flow onto the page instead of scrolling */
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  main {
+    overflow: visible !important;
+    height: auto !important;
+    padding: 0 !important;
+  }
+
+  .flex-1 {
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  /* Avoid cards/charts being split awkwardly across pages */
+  .rounded-xl,
+  .rounded-2xl {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  @page {
+    margin: 12mm;
+  }
+}

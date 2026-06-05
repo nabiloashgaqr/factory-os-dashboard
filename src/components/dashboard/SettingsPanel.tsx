@@ -49,6 +49,12 @@ export default function SettingsPanel() {
   // Dynamic model list — refreshes whenever the provider changes.
   const [models, setModels] = useState<AiModel[]>(() => modelsForProvider(s.aiProvider));
   const [loadingModels, setLoadingModels] = useState(false);
+  // Manual model entry: on if the saved model isn't a known one for the provider.
+  const [isCustomModel, setIsCustomModel] = useState<boolean>(
+    () =>
+      s.aiProvider !== "disabled" &&
+      !modelsForProvider(s.aiProvider).some((m) => m.id === s.aiModel)
+  );
 
   useEffect(() => {
     if (s.aiProvider === "disabled") {
@@ -63,8 +69,9 @@ export default function SettingsPanel() {
         if (cancelled) return;
         const list: AiModel[] = res.success ? res.models : modelsForProvider(s.aiProvider);
         setModels(list);
-        // Ensure the selected model belongs to the new provider.
-        if (list.length && !list.some((m) => m.id === s.aiModel)) {
+        // Ensure the selected model belongs to the new provider, unless the
+        // user is intentionally using a manual/custom model id.
+        if (!isCustomModel && list.length && !list.some((m) => m.id === s.aiModel)) {
           s.setAiModel(list[0].id);
         }
       })
@@ -234,8 +241,15 @@ export default function SettingsPanel() {
               {loadingModels && " …"}
             </label>
             <select
-              value={s.aiModel}
-              onChange={(e) => s.setAiModel(e.target.value)}
+              value={isCustomModel ? "__custom__" : s.aiModel}
+              onChange={(e) => {
+                if (e.target.value === "__custom__") {
+                  setIsCustomModel(true);
+                } else {
+                  setIsCustomModel(false);
+                  s.setAiModel(e.target.value);
+                }
+              }}
               disabled={loadingModels || s.aiProvider === "disabled"}
               className={`${inputCls.replace("font-mono", "")} disabled:opacity-50`}
             >
@@ -245,7 +259,25 @@ export default function SettingsPanel() {
                 </option>
               ))}
               {models.length === 0 && <option>—</option>}
+              <option value="__custom__">
+                {s.language === "ar" ? "✏️ موديل مخصّص (يدوي)" : "✏️ Custom model (manual)"}
+              </option>
             </select>
+
+            {isCustomModel && (
+              <input
+                type="text"
+                value={s.aiModel}
+                onChange={(e) => s.setAiModel(e.target.value)}
+                placeholder={
+                  s.language === "ar"
+                    ? "اكتب معرّف الموديل بالضبط…"
+                    : "Type the exact model id…"
+                }
+                className={`${inputCls} mt-2`}
+                autoFocus
+              />
+            )}
           </div>
         </div>
 

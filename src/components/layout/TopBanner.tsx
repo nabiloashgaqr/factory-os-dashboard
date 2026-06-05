@@ -6,7 +6,7 @@ import { useStore } from "@/store/useStore";
 import { aiReady } from "@/lib/ai";
 import { getTranslations } from "@/lib/i18n";
 import { useFactoryData } from "@/components/shared/DataProvider";
-import { Clock, Database, Sparkles, RefreshCw, Repeat, MessageSquare } from "lucide-react";
+import { Clock, Database, Sparkles, RefreshCw, Repeat, Bot, FileDown } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import AiContextSidebar from "@/components/shared/AiContextSidebar";
 
@@ -23,6 +23,13 @@ export default function TopBanner() {
     const id = setInterval(() => setTick((n) => n + 1), 30000);
     return () => clearInterval(id);
   }, []);
+
+  // Print the whole dashboard. Print CSS (globals.css) hides the chrome
+  // (banner/sidebar) and lays the active view out cleanly for "Save as PDF".
+  const exportDashboardPdf = () => {
+    if (isAiSidebarOpen) setIsAiSidebarOpen(false);
+    setTimeout(() => window.print(), 150);
+  };
 
   const ready = aiReady(store);
   const providerLabel =
@@ -95,6 +102,16 @@ export default function TopBanner() {
           </div>
         )}
 
+        {/* Export the whole dashboard to PDF */}
+        <button
+          onClick={exportDashboardPdf}
+          title={language === "ar" ? "تصدير اللوحة PDF" : "Export dashboard PDF"}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[var(--border)] bg-[var(--bg)] hover:border-[var(--accent)] font-medium transition-all"
+        >
+          <FileDown size={14} className="text-[var(--accent)]" />
+          <span className="hidden lg:inline">PDF</span>
+        </button>
+
         {/* Page-aware AI assistant launcher */}
         <button
           onClick={() => setIsAiSidebarOpen(!isAiSidebarOpen)}
@@ -105,10 +122,8 @@ export default function TopBanner() {
               : "bg-[var(--bg)] border-[var(--border)] hover:border-[var(--accent)]"
           }`}
         >
-          <MessageSquare size={14} className={isAiSidebarOpen ? "" : "text-[var(--accent)]"} />
-          <span className="hidden lg:inline">
-            {language === "ar" ? "مساعد السياق" : "Context Intel"}
-          </span>
+          <Bot size={15} className={isAiSidebarOpen ? "" : "text-[var(--accent)]"} />
+          <span className="hidden lg:inline">AI Assistant</span>
         </button>
 
         <button
