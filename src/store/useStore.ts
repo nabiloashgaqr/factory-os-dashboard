@@ -1,6 +1,35 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 import type { Language } from "@/lib/i18n";
+
+/**
+ * Safe storage for embedding inside Notion (iframe). Some browsers block
+ * localStorage for third-party iframes; in that case we transparently fall
+ * back to an in-memory store so the app never crashes — settings just won't
+ * persist across reloads in that restricted context.
+ */
+function createSafeStorage(): Storage {
+  const mem = new Map<string, string>();
+  const memStorage: Storage = {
+    getItem: (k) => (mem.has(k) ? mem.get(k)! : null),
+    setItem: (k, v) => void mem.set(k, v),
+    removeItem: (k) => void mem.delete(k),
+    clear: () => mem.clear(),
+    key: (i) => Array.from(mem.keys())[i] ?? null,
+    get length() {
+      return mem.size;
+    },
+  };
+  if (typeof window === "undefined") return memStorage;
+  try {
+    const t = "__fos_test__";
+    window.localStorage.setItem(t, "1");
+    window.localStorage.removeItem(t);
+    return window.localStorage;
+  } catch {
+    return memStorage;
+  }
+}
 
 export type ThemeName =
   | "executive-dark"
@@ -164,6 +193,7 @@ export const useStore = create<AppState>()(
     }),
     {
       name: "factory-os-settings",
+      storage: createJSONStorage(() => createSafeStorage()),
       // Only persist settings, not transient runtime sync state.
       partialize: (state) => ({
         language: state.language,
