@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useStore } from "@/store/useStore";
+import { useAI } from "@/lib/useAI";
 import { getTranslations } from "@/lib/i18n";
 import { Card, SectionHeader } from "@/components/shared/ui";
 import { Mic, Square, Sparkles, Send, AlertCircle } from "lucide-react";
@@ -14,7 +15,8 @@ interface StructuredLog {
 }
 
 export default function VoiceShiftLog() {
-  const { language, geminiKey, aiModel, aiProvider, temperature, maxTokens } = useStore();
+  const { language } = useStore();
+  const { generate, ready } = useAI();
   const t = getTranslations(language);
 
   const [isRecording, setIsRecording] = useState(false);
@@ -24,7 +26,7 @@ export default function VoiceShiftLog() {
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
 
-  const enabled = aiProvider !== "disabled" && !!geminiKey;
+  const enabled = ready;
 
   const startRecording = () => {
     const SpeechRecognition =
@@ -67,20 +69,11 @@ export default function VoiceShiftLog() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/gemini", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          apiKey: geminiKey,
-          model: aiModel,
-          temperature,
-          maxOutputTokens: maxTokens,
+      const json = await generate({
           json: true,
           prompt: `Analyze this industrial voice log and return ONLY a JSON object with keys "line", "category", "timestamp", "summary". Text: "${transcript}". Respond in ${language === "ar" ? "Arabic" : "English"}.`,
           contextData: {},
-        }),
-      });
-      const json = await res.json();
+        });
       if (json.success) {
         const clean = json.text.replace(/```json|```/g, "").trim();
         setStructured(JSON.parse(clean));

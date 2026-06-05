@@ -3,14 +3,17 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useStore } from "@/store/useStore";
+import { aiReady } from "@/lib/ai";
 import { getTranslations } from "@/lib/i18n";
 import { useFactoryData } from "@/components/shared/DataProvider";
-import { Clock, Database, Sparkles, RefreshCw, Repeat } from "lucide-react";
+import { Clock, Database, Sparkles, RefreshCw, Repeat, MessageSquare } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import AiContextSidebar from "@/components/shared/AiContextSidebar";
 
 export default function TopBanner() {
-  const { language, syncStatus, lastSync, notionToken, geminiKey, aiProvider, autoSync, autoSyncInterval, usingCache } =
-    useStore();
+  const store = useStore();
+  const { language, syncStatus, lastSync, notionToken, aiProvider, autoSync, autoSyncInterval, usingCache, isAiSidebarOpen, setIsAiSidebarOpen } =
+    store;
   const t = getTranslations(language);
   const { refresh, loading } = useFactoryData();
 
@@ -21,7 +24,11 @@ export default function TopBanner() {
     return () => clearInterval(id);
   }, []);
 
-  const aiReady = aiProvider !== "disabled" && !!geminiKey;
+  const ready = aiReady(store);
+  const providerLabel =
+    aiProvider === "disabled"
+      ? "AI"
+      : aiProvider.charAt(0).toUpperCase() + aiProvider.slice(1);
 
   const syncLabel = () => {
     if (loading || syncStatus === "syncing") return t.syncing;
@@ -76,9 +83,9 @@ export default function TopBanner() {
         <div className="hidden md:flex items-center gap-2 opacity-80">
           <Sparkles
             size={14}
-            className={aiReady ? "text-[var(--success)]" : "text-[var(--warning)]"}
+            className={ready ? "text-[var(--success)]" : "text-[var(--warning)]"}
           />
-          {t.gemini}: {aiReady ? t.ready : t.notConfigured}
+          {providerLabel}: {ready ? t.ready : t.notConfigured}
         </div>
 
         {autoSync && (
@@ -87,6 +94,22 @@ export default function TopBanner() {
             {t.autoSync}: {autoSyncInterval}m
           </div>
         )}
+
+        {/* Page-aware AI assistant launcher */}
+        <button
+          onClick={() => setIsAiSidebarOpen(!isAiSidebarOpen)}
+          title={t.aiInsights}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border font-medium transition-all ${
+            isAiSidebarOpen
+              ? "bg-[var(--accent)] text-[var(--bg)] border-[var(--accent)]"
+              : "bg-[var(--bg)] border-[var(--border)] hover:border-[var(--accent)]"
+          }`}
+        >
+          <MessageSquare size={14} className={isAiSidebarOpen ? "" : "text-[var(--accent)]"} />
+          <span className="hidden lg:inline">
+            {language === "ar" ? "مساعد السياق" : "Context Intel"}
+          </span>
+        </button>
 
         <button
           onClick={refresh}
@@ -97,6 +120,9 @@ export default function TopBanner() {
           <span className="hidden sm:inline">{t.syncNow}</span>
         </button>
       </div>
+
+      {/* Slide-over AI chat (renders only when open) */}
+      <AiContextSidebar />
     </header>
   );
 }

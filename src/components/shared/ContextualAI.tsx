@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useStore } from "@/store/useStore";
+import { useAI } from "@/lib/useAI";
 import { Sparkles } from "lucide-react";
 
 interface Insight {
@@ -23,36 +24,25 @@ export default function ContextualAI({
   pageContext,
   currentData,
 }: ContextualAIProps) {
-  const { language, geminiKey, aiModel, aiProvider, temperature, maxTokens } =
-    useStore();
+  const { language } = useStore();
+  const { generate, ready: enabled } = useAI();
   const [insight, setInsight] = useState<Insight | null>(null);
   const [loading, setLoading] = useState(false);
-
-  const enabled = aiProvider !== "disabled" && !!geminiKey;
 
   const analyze = useCallback(async () => {
     if (!enabled) return;
     setLoading(true);
     try {
-      const res = await fetch("/api/gemini", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          apiKey: geminiKey,
-          model: aiModel,
-          temperature,
-          maxOutputTokens: maxTokens,
-          json: true,
-          prompt: `You are the Lead Industrial AI for FactoryOS. Analyze the JSON data for context [${pageContext}].
+      const result = await generate({
+        json: true,
+        prompt: `You are the Lead Industrial AI for FactoryOS. Analyze the JSON data for context [${pageContext}].
 Return ONLY a JSON object with exactly these keys:
 "interpretation" (1 sentence reading of the numbers),
 "rootCause" (a concise 5-why style hypothesis),
 "actionableSolution" (one immediate engineered fix).
 Language: ${language === "ar" ? "Professional Arabic industrial tone" : "Concise executive English"}.`,
-          contextData: currentData,
-        }),
+        contextData: currentData,
       });
-      const result = await res.json();
       if (result.success) {
         const clean = result.text.replace(/```json|```/g, "").trim();
         setInsight(JSON.parse(clean));
@@ -78,7 +68,7 @@ Language: ${language === "ar" ? "Professional Arabic industrial tone" : "Concise
     } finally {
       setLoading(false);
     }
-  }, [enabled, geminiKey, aiModel, temperature, maxTokens, pageContext, currentData, language]);
+  }, [enabled, generate, pageContext, currentData, language]);
 
   useEffect(() => {
     if (enabled && currentData) analyze();

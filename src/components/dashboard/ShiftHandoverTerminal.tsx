@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useStore } from "@/store/useStore";
+import { useAI } from "@/lib/useAI";
 import { getTranslations } from "@/lib/i18n";
 import { useFactoryData } from "@/components/shared/DataProvider";
 import { applyKpiFilters, countByAlert } from "@/lib/kpiProcessor";
@@ -9,7 +10,8 @@ import { Card, SectionHeader } from "@/components/shared/ui";
 import { Users, AlertCircle } from "lucide-react";
 
 export default function ShiftHandoverTerminal() {
-  const { language, geminiKey, aiModel, aiProvider, temperature, maxTokens } = useStore();
+  const { language } = useStore();
+  const { generate, ready } = useAI();
   const t = getTranslations(language);
   const { data, filters } = useFactoryData();
 
@@ -25,7 +27,7 @@ export default function ShiftHandoverTerminal() {
     return { alerts, openActions, lowStock };
   }, [data, filters]);
 
-  const enabled = aiProvider !== "disabled" && !!geminiKey;
+  const enabled = ready;
 
   const compile = async () => {
     if (!enabled) {
@@ -35,19 +37,10 @@ export default function ShiftHandoverTerminal() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/gemini", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          apiKey: geminiKey,
-          model: aiModel,
-          temperature,
-          maxOutputTokens: maxTokens,
+      const json = await generate({
           prompt: `Compile an automated Shift Handover briefing. Provide exactly 3 critical operational bullet points for the incoming team in ${language === "ar" ? "Arabic" : "English"}. Be tactical and concise.`,
           contextData: context,
-        }),
-      });
-      const json = await res.json();
+        });
       if (json.success) setLog(json.text);
       else throw new Error(json.error);
     } catch (e: any) {

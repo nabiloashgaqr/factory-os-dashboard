@@ -37,10 +37,9 @@ const TABS_WITH_FILTERS = new Set([
 ]);
 
 function DashboardShell() {
-  const { language } = useStore();
+  const { language, activeTab, setActiveTab } = useStore();
   const t = getTranslations(language);
   const { warning, data } = useFactoryData();
-  const [activeTab, setActiveTab] = useState("overview");
 
   const navGroups = useMemo(
     () => [

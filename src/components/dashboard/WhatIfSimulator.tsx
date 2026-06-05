@@ -2,13 +2,15 @@
 
 import { useMemo, useState } from "react";
 import { useStore } from "@/store/useStore";
+import { useAI } from "@/lib/useAI";
 import { getTranslations } from "@/lib/i18n";
 import { useFactoryData } from "@/components/shared/DataProvider";
 import { Card, SectionHeader } from "@/components/shared/ui";
 import { Sliders, Sparkles, AlertCircle } from "lucide-react";
 
 export default function WhatIfSimulator() {
-  const { language, geminiKey, aiModel, aiProvider, temperature, maxTokens } = useStore();
+  const { language } = useStore();
+  const { generate, ready } = useAI();
   const t = getTranslations(language);
   const { data } = useFactoryData();
 
@@ -39,7 +41,7 @@ export default function WhatIfSimulator() {
     Math.round(baseItem.currentStock / adjustedBurn - leadTimeDelay)
   );
 
-  const enabled = aiProvider !== "disabled" && !!geminiKey;
+  const enabled = ready;
 
   const runSimulation = async () => {
     if (!enabled) {
@@ -49,19 +51,10 @@ export default function WhatIfSimulator() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/gemini", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          apiKey: geminiKey,
-          model: aiModel,
-          temperature,
-          maxOutputTokens: maxTokens,
+      const json = await generate({
           prompt: `Inventory risk simulation for "${baseItem.materialName}". Stock-out occurs in ${newDays} days. Supplier lead delayed by ${leadTimeDelay} days, burn rate +${burnRateIncrease}%. Provide a concise emergency procurement / mitigation plan in ${language === "ar" ? "Arabic" : "English"}.`,
           contextData: { material: baseItem.materialName, newDays, leadTimeDelay, burnRateIncrease },
-        }),
-      });
-      const json = await res.json();
+        });
       if (json.success) setAiAnalysis(json.text);
       else throw new Error(json.error);
     } catch (e: any) {

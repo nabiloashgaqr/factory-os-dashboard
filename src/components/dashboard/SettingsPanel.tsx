@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useStore, type ThemeName, type AiProvider } from "@/store/useStore";
 import { getTranslations, type Language } from "@/lib/i18n";
 import { useFactoryData } from "@/components/shared/DataProvider";
+import { modelsForProvider, keyForProvider, type AiModel } from "@/lib/ai";
 import { Card, SectionHeader } from "@/components/shared/ui";
 import {
   Monitor,
@@ -28,12 +29,14 @@ const THEMES: { value: ThemeName; label: string }[] = [
   { value: "minimal-white", label: "☀️ Minimal White" },
 ];
 
-const GEMINI_MODELS = [
-  "gemini-1.5-flash",
-  "gemini-1.5-pro",
-  "gemini-2.0-flash",
-  "gemini-2.5-pro",
-];
+const PROVIDER_META: Record<
+  Exclude<AiProvider, "disabled">,
+  { label: string; keyPlaceholder: string }
+> = {
+  gemini: { label: "Gemini (Google AI Studio)", keyPlaceholder: "AIzaSy..." },
+  openai: { label: "OpenAI (GPT Workspace)", keyPlaceholder: "sk-proj-..." },
+  claude: { label: "Claude (Anthropic Console)", keyPlaceholder: "sk-ant-..." },
+};
 
 export default function SettingsPanel() {
   const s = useStore();
@@ -42,6 +45,40 @@ export default function SettingsPanel() {
 
   const [notionTest, setNotionTest] = useState<TestState>("idle");
   const [aiTest, setAiTest] = useState<TestState>("idle");
+
+  // Dynamic model list — refreshes whenever the provider changes.
+  const [models, setModels] = useState<AiModel[]>(() => modelsForProvider(s.aiProvider));
+  const [loadingModels, setLoadingModels] = useState(false);
+
+  useEffect(() => {
+    if (s.aiProvider === "disabled") {
+      setModels([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingModels(true);
+    fetch(`/api/ai/models?provider=${s.aiProvider}`)
+      .then((r) => r.json())
+      .then((res) => {
+        if (cancelled) return;
+        const list: AiModel[] = res.success ? res.models : modelsForProvider(s.aiProvider);
+        setModels(list);
+        // Ensure the selected model belongs to the new provider.
+        if (list.length && !list.some((m) => m.id === s.aiModel)) {
+          s.setAiModel(list[0].id);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setModels(modelsForProvider(s.aiProvider));
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingModels(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [s.aiProvider]);
 
   const testNotion = async () => {
     setNotionTest("loading");
@@ -67,14 +104,15 @@ export default function SettingsPanel() {
   const testAI = async () => {
     setAiTest("loading");
     try {
-      const res = await fetch("/api/gemini", {
+      const res = await fetch("/api/ai/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          apiKey: s.geminiKey,
+          provider: s.aiProvider,
+          apiKey: keyForProvider(s),
           model: s.aiModel,
           prompt: "Reply with the single word: OK",
-          contextData: {},
+          noCache: true,
         }),
       });
       const json = await res.json();
@@ -176,16 +214,6 @@ export default function SettingsPanel() {
           </h3>
           <TestButton state={aiTest} onClick={testAI} label={t.testAI} />
         </div>
-        <div>
-          <label className={labelCls}>{t.geminiKey}</label>
-          <input
-            type="password"
-            value={s.geminiKey}
-            onChange={(e) => s.setGeminiKey(e.target.value)}
-            placeholder="AIzaSy..."
-            className={inputCls}
-          />
-        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className={labelCls}>{t.aiProvider}</label>
@@ -194,26 +222,70 @@ export default function SettingsPanel() {
               onChange={(e) => s.setAiProvider(e.target.value as AiProvider)}
               className={inputCls.replace("font-mono", "")}
             >
-              <option value="gemini">Gemini</option>
-              <option value="openai">OpenAI (soon)</option>
-              <option value="claude">Claude (soon)</option>
+              <option value="gemini">Gemini (Google AI Studio)</option>
+              <option value="openai">OpenAI (GPT Workspace)</option>
+              <option value="claude">Claude (Anthropic Console)</option>
               <option value="disabled">Disabled</option>
             </select>
           </div>
           <div>
-            <label className={labelCls}>{t.aiModel}</label>
+            <label className={labelCls}>
+              {t.aiModel}
+              {loadingModels && " …"}
+            </label>
             <select
               value={s.aiModel}
               onChange={(e) => s.setAiModel(e.target.value)}
-              className={inputCls.replace("font-mono", "")}
+              disabled={loadingModels || s.aiProvider === "disabled"}
+              className={`${inputCls.replace("font-mono", "")} disabled:opacity-50`}
             >
-              {GEMINI_MODELS.map((m) => (
-                <option key={m} value={m}>
-                  {m}
+              {models.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
                 </option>
               ))}
+              {models.length === 0 && <option>—</option>}
             </select>
           </div>
+        </div>
+
+        {/* Per-provider API key (only the active provider's field is shown) */}
+        {s.aiProvider !== "disabled" && (
+          <div>
+            <label className={labelCls}>
+              {PROVIDER_META[s.aiProvider].label} — API Key
+            </label>
+            {s.aiProvider === "gemini" && (
+              <input
+                type="password"
+                value={s.geminiKey}
+                onChange={(e) => s.setGeminiKey(e.target.value)}
+                placeholder={PROVIDER_META.gemini.keyPlaceholder}
+                className={inputCls}
+              />
+            )}
+            {s.aiProvider === "openai" && (
+              <input
+                type="password"
+                value={s.openaiKey}
+                onChange={(e) => s.setOpenaiKey(e.target.value)}
+                placeholder={PROVIDER_META.openai.keyPlaceholder}
+                className={inputCls}
+              />
+            )}
+            {s.aiProvider === "claude" && (
+              <input
+                type="password"
+                value={s.claudeKey}
+                onChange={(e) => s.setClaudeKey(e.target.value)}
+                placeholder={PROVIDER_META.claude.keyPlaceholder}
+                className={inputCls}
+              />
+            )}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className={labelCls}>
               {t.temperature}: {s.temperature.toFixed(1)}

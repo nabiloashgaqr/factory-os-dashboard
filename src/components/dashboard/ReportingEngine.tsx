@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useStore } from "@/store/useStore";
+import { useAI } from "@/lib/useAI";
 import { getTranslations } from "@/lib/i18n";
 import { useFactoryData } from "@/components/shared/DataProvider";
 import { applyKpiFilters, aggregateKpiMeasurements, countByAlert } from "@/lib/kpiProcessor";
@@ -11,7 +12,8 @@ import { FileText, Calendar, Download, AlertCircle } from "lucide-react";
 type ReportType = "daily" | "weekly" | "monthly";
 
 export default function ReportingEngine() {
-  const { language, geminiKey, aiModel, aiProvider, temperature, maxTokens } = useStore();
+  const { language } = useStore();
+  const { generate: runAI, ready } = useAI();
   const t = getTranslations(language);
   const { data, filters } = useFactoryData();
 
@@ -20,7 +22,7 @@ export default function ReportingEngine() {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const enabled = aiProvider !== "disabled" && !!geminiKey;
+  const enabled = ready;
 
   const buildContext = (type: ReportType) => {
     const days = type === "daily" ? 1 : type === "weekly" ? 7 : 30;
@@ -44,19 +46,10 @@ export default function ReportingEngine() {
     setGenerating(true);
     setError(null);
     try {
-      const res = await fetch("/api/gemini", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          apiKey: geminiKey,
-          model: aiModel,
-          temperature,
-          maxOutputTokens: maxTokens,
+      const json = await runAI({
           prompt: `Generate a detailed ${type} Industrial Performance Report. Structure: 1) Executive Summary, 2) Target vs Actual Variance, 3) Critical Blockers & Safety-Stock Gaps, 4) Recommended Next Actions. Language: ${language === "ar" ? "Formal Arabic manufacturing terminology" : "Executive English"}.`,
           contextData: buildContext(type),
-        }),
-      });
-      const json = await res.json();
+        });
       if (json.success) setContent(json.text);
       else throw new Error(json.error);
     } catch (e: any) {

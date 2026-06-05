@@ -27,6 +27,8 @@ interface Settings {
 
   // AI
   geminiKey: string;
+  openaiKey: string;
+  claudeKey: string;
   aiProvider: AiProvider;
   aiModel: string;
   temperature: number;
@@ -41,6 +43,8 @@ interface RuntimeState {
   lastSync: number | null; // epoch ms (serialisable)
   syncStatus: SyncStatus;
   usingCache: boolean;
+  isAiSidebarOpen: boolean;
+  activeTab: string;
   errorLog: string[];
 }
 
@@ -58,6 +62,8 @@ interface Actions {
   setProgressDbId: (v: string) => void;
   setInventoryDbId: (v: string) => void;
   setGeminiKey: (v: string) => void;
+  setOpenaiKey: (v: string) => void;
+  setClaudeKey: (v: string) => void;
   setAiProvider: (v: AiProvider) => void;
   setAiModel: (v: string) => void;
   setTemperature: (v: number) => void;
@@ -67,6 +73,8 @@ interface Actions {
 
   setSyncStatus: (status: SyncStatus, time?: number) => void;
   setUsingCache: (v: boolean) => void;
+  setIsAiSidebarOpen: (open: boolean) => void;
+  setActiveTab: (tab: string) => void;
   pushError: (msg: string) => void;
   resetSettings: () => void;
 }
@@ -82,6 +90,8 @@ const defaultSettings: Settings = {
   progressDbId: "",
   inventoryDbId: "",
   geminiKey: "",
+  openaiKey: "",
+  claudeKey: "",
   aiProvider: "gemini",
   aiModel: "gemini-1.5-flash",
   temperature: 0.4,
@@ -99,6 +109,8 @@ export const useStore = create<AppState>()(
       lastSync: null,
       syncStatus: "offline",
       usingCache: false,
+      isAiSidebarOpen: false,
+      activeTab: "overview",
       errorLog: [],
 
       setLanguage: (language) => set({ language }),
@@ -112,6 +124,8 @@ export const useStore = create<AppState>()(
       setProgressDbId: (progressDbId) => set({ progressDbId }),
       setInventoryDbId: (inventoryDbId) => set({ inventoryDbId }),
       setGeminiKey: (geminiKey) => set({ geminiKey }),
+      setOpenaiKey: (openaiKey) => set({ openaiKey }),
+      setClaudeKey: (claudeKey) => set({ claudeKey }),
       setAiProvider: (aiProvider) => set({ aiProvider }),
       setAiModel: (aiModel) => set({ aiModel }),
       setTemperature: (temperature) => set({ temperature }),
@@ -122,6 +136,8 @@ export const useStore = create<AppState>()(
       setSyncStatus: (syncStatus, time) =>
         set(time !== undefined ? { syncStatus, lastSync: time } : { syncStatus }),
       setUsingCache: (usingCache) => set({ usingCache }),
+      setIsAiSidebarOpen: (isAiSidebarOpen) => set({ isAiSidebarOpen }),
+      setActiveTab: (activeTab) => set({ activeTab }),
       pushError: (msg) =>
         set((state) => ({
           errorLog: [
@@ -144,6 +160,8 @@ export const useStore = create<AppState>()(
         progressDbId: state.progressDbId,
         inventoryDbId: state.inventoryDbId,
         geminiKey: state.geminiKey,
+        openaiKey: state.openaiKey,
+        claudeKey: state.claudeKey,
         aiProvider: state.aiProvider,
         aiModel: state.aiModel,
         temperature: state.temperature,

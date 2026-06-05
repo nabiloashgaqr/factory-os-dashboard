@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useStore } from "@/store/useStore";
+import { useAI } from "@/lib/useAI";
 import { getTranslations } from "@/lib/i18n";
 import { useFactoryData } from "@/components/shared/DataProvider";
 import { applyKpiFilters, aggregateKpiMeasurements, countByAlert } from "@/lib/kpiProcessor";
@@ -9,7 +10,8 @@ import { Card, SectionHeader } from "@/components/shared/ui";
 import { Sparkles, Loader2, AlertCircle } from "lucide-react";
 
 export default function AIInsightsPanel() {
-  const { language, geminiKey, aiModel, aiProvider, temperature, maxTokens } = useStore();
+  const { language, aiProvider } = useStore();
+  const { generate, ready } = useAI();
   const t = getTranslations(language);
   const { data, filters } = useFactoryData();
 
@@ -18,7 +20,7 @@ export default function AIInsightsPanel() {
   const [activePrompt, setActivePrompt] = useState<string>("");
   const [customQuestion, setCustomQuestion] = useState("");
 
-  const enabled = aiProvider !== "disabled" && !!geminiKey;
+  const enabled = ready;
 
   // Summarised context — never send raw rows.
   const context = useMemo(() => {
@@ -58,19 +60,10 @@ export default function AIInsightsPanel() {
       const instruction = custom
         ? custom
         : `Generate a "${promptLabel}" for the factory based on the data context. Be specific, executive-grade, and actionable.`;
-      const res = await fetch("/api/gemini", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          apiKey: geminiKey,
-          model: aiModel,
-          temperature,
-          maxOutputTokens: maxTokens,
-          prompt: `${instruction}\nRespond in ${language === "ar" ? "professional industrial Arabic" : "concise executive English"}.`,
-          contextData: context,
-        }),
+      const json = await generate({
+        prompt: `${instruction}\nRespond in ${language === "ar" ? "professional industrial Arabic" : "concise executive English"}.`,
+        contextData: context,
       });
-      const json = await res.json();
       if (json.success) setResponse(json.text);
       else throw new Error(json.error);
     } catch (e: any) {

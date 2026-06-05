@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useStore } from "@/store/useStore";
+import { useAI } from "@/lib/useAI";
 import { Lightbulb, Fingerprint, ShieldAlert, Box, Sparkles } from "lucide-react";
 
 interface InventoryStats {
@@ -21,11 +22,12 @@ interface InventoryStats {
  * fallback so it is never empty and never off-topic.
  */
 export default function InventoryAiAssistant({ stats }: { stats: InventoryStats }) {
-  const { language, geminiKey, aiModel, aiProvider, temperature, maxTokens } = useStore();
+  const { language } = useStore();
+  const { generate, ready } = useAI();
   const [aiText, setAiText] = useState<string>("");
   const [loading, setLoading] = useState(false);
 
-  const enabled = aiProvider !== "disabled" && !!geminiKey;
+  const enabled = ready;
   const sample = stats.urgentMaterials.slice(0, 3).join("، ");
   const sampleEn = stats.urgentMaterials.slice(0, 3).join(", ");
 
@@ -62,21 +64,12 @@ export default function InventoryAiAssistant({ stats }: { stats: InventoryStats 
     setLoading(true);
     setAiText("");
     try {
-      const res = await fetch("/api/gemini", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          apiKey: geminiKey,
-          model: aiModel,
-          temperature,
-          maxOutputTokens: maxTokens,
+      const json = await generate({
           prompt: `You are a supply-chain & procurement AI for a factory. Based ONLY on these live inventory metrics, give a short, tactical procurement recommendation (no machine-maintenance talk). Respond in ${
             language === "ar" ? "professional Arabic" : "concise English"
           }.`,
           contextData: stats,
-        }),
-      });
-      const json = await res.json();
+        });
       if (json.success) setAiText(json.text);
       else throw new Error(json.error);
     } catch {
