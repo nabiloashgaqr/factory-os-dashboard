@@ -10,13 +10,14 @@ import {
   countByAlert,
 } from "@/lib/kpiProcessor";
 import { Card, SectionHeader, StatCard, Spinner, EmptyState } from "@/components/shared/ui";
-import ContextualAI from "@/components/shared/ContextualAI";
+import ProactiveAiAssistant from "@/components/shared/ProactiveAiAssistant";
 import { getCleanKpiName } from "@/lib/notionMapper";
 import { formatCurrency } from "@/lib/utils";
 import { ArrowUpRight, TrendingDown } from "lucide-react";
 import {
-  BarChart,
+  ComposedChart,
   Bar,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -96,17 +97,7 @@ export default function ExecutiveOverview() {
         subtitle={t.tagline}
       />
 
-      <ContextualAI
-        pageContext="executive"
-        currentData={{
-          avgOee: stats.avgOee,
-          criticalAlerts: alerts.Critical,
-          warningAlerts: alerts.Warning,
-          openActions: stats.openActions,
-          overdueActions: stats.overdue,
-          verifiedSavings: stats.verifiedSavings,
-        }}
-      />
+      <ProactiveAiAssistant />
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -169,6 +160,14 @@ export default function ExecutiveOverview() {
             const sideClass = language === "ar" ? "right-0" : "left-0";
             const padClass = language === "ar" ? "pr-4" : "pl-4";
 
+            // Signed deviation vs target (favorable colour respects
+            // lower-is-better KPIs, so a lower scrap rate reads green).
+            const rawDev = kpi.targetValue
+              ? ((kpi.averageActualValue - kpi.targetValue) / kpi.targetValue) * 100
+              : 0;
+            const devText = `${rawDev >= 0 ? "+" : ""}${rawDev.toFixed(1)}%`;
+            const devColor = critical ? "var(--critical)" : "var(--success)";
+
             return (
               <div
                 key={kpi.kpiName}
@@ -186,8 +185,8 @@ export default function ExecutiveOverview() {
                     {localizedTitle}
                   </h4>
 
-                  {/* Current averaged value: oversized for the factory floor */}
-                  <div className="flex items-baseline gap-2">
+                  {/* Current averaged value + live deviation badge */}
+                  <div className="flex items-baseline gap-2 flex-wrap">
                     <span
                       className="text-4xl font-black font-mono tracking-tight"
                       style={{ color: statusColor }}
@@ -197,6 +196,18 @@ export default function ExecutiveOverview() {
                     <span className="text-sm font-bold opacity-60 uppercase">
                       {kpi.unit || ""}
                     </span>
+                    {kpi.targetValue !== 0 && (
+                      <span
+                        className="flex items-center gap-0.5 text-[11px] font-extrabold px-1.5 py-0.5 rounded-lg"
+                        style={{
+                          color: devColor,
+                          backgroundColor: `color-mix(in srgb, ${devColor} 14%, transparent)`,
+                        }}
+                      >
+                        {critical ? <TrendingDown size={12} /> : <ArrowUpRight size={12} />}
+                        {devText}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -250,7 +261,9 @@ export default function ExecutiveOverview() {
             <EmptyState message={t.noData} />
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart
+              {/* Composed: actual = soft bars, target = clean reference line
+                  so the gap reads at a single glance (no crowded twin bars). */}
+              <ComposedChart
                 data={aggregated}
                 margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
               >
@@ -278,16 +291,17 @@ export default function ExecutiveOverview() {
                   fill="var(--accent)"
                   name={language === "ar" ? "المتوسط الفعلي" : "Computed Actual Mean"}
                   radius={[4, 4, 0, 0]}
-                  barSize={24}
+                  maxBarSize={46}
                 />
-                <Bar
+                <Line
+                  type="monotone"
                   dataKey="targetValue"
-                  fill="var(--border)"
+                  stroke="var(--warning)"
+                  strokeWidth={3}
+                  dot={{ r: 4, strokeWidth: 2 }}
                   name={language === "ar" ? "المستهدف" : "Engineering Target"}
-                  radius={[4, 4, 0, 0]}
-                  barSize={24}
                 />
-              </BarChart>
+              </ComposedChart>
             </ResponsiveContainer>
           )}
         </div>
