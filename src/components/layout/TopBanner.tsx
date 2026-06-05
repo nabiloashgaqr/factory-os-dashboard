@@ -83,34 +83,49 @@ export default function TopBanner() {
       </div>
 
       {/* Status cluster */}
-      <div className="flex items-center gap-3 md:gap-5 text-[var(--text)]">
-        <div className="hidden sm:flex items-center gap-2 opacity-80">
-          <Clock size={14} />
+      <div className="flex items-center gap-2 md:gap-3 text-[var(--text)]">
+        <span className="fos-pill hidden sm:inline-flex opacity-90">
+          <Clock size={13} className="opacity-70" />
           {syncLabel()}
-        </div>
+        </span>
 
-        <div className="hidden md:flex items-center gap-2 opacity-80">
-          <Database
-            size={14}
-            className={notionToken ? "text-[var(--success)]" : "text-[var(--warning)]"}
+        <span className="fos-pill hidden md:inline-flex">
+          <span
+            className="w-2 h-2 rounded-full"
+            style={{
+              backgroundColor: notionToken ? "var(--success)" : "var(--warning)",
+              boxShadow: notionToken
+                ? "0 0 0 3px color-mix(in srgb, var(--success) 25%, transparent)"
+                : "none",
+            }}
           />
-          {t.notion}: {notionToken ? t.connected : t.notConfigured}
-        </div>
+          <Database size={13} className="opacity-70" />
+          {t.notion}
+        </span>
 
-        <div className="hidden md:flex items-center gap-2 opacity-80">
-          <Sparkles
-            size={14}
-            className={ready ? "text-[var(--success)]" : "text-[var(--warning)]"}
+        <span className="fos-pill hidden md:inline-flex">
+          <span
+            className="w-2 h-2 rounded-full"
+            style={{
+              backgroundColor: ready ? "var(--success)" : "var(--warning)",
+              boxShadow: ready
+                ? "0 0 0 3px color-mix(in srgb, var(--success) 25%, transparent)"
+                : "none",
+            }}
           />
-          {providerLabel}: {ready ? t.ready : t.notConfigured}
-        </div>
+          <Sparkles size={13} className="opacity-70" />
+          {providerLabel}
+        </span>
 
         {autoSync && (
-          <div className="hidden lg:flex items-center gap-1.5 opacity-70 text-xs">
-            <Repeat size={13} />
-            {t.autoSync}: {autoSyncInterval}m
-          </div>
+          <span className="fos-pill hidden lg:inline-flex opacity-80">
+            <Repeat size={12} />
+            {autoSyncInterval}m
+          </span>
         )}
+
+        {/* divider */}
+        <span className="hidden md:block w-px h-6 bg-[var(--border)] mx-1" />
 
         {/* Critical task notifications */}
         <NotificationBell />

@@ -76,7 +76,7 @@ export default function InventoryRiskMonitor() {
 
       <ProactiveAiAssistant />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 fos-stagger">
         <StatCard label={t.expediteItems} value={stats.expedite} accent="var(--critical)" />
         <StatCard label={language === "ar" ? "تحت حد الأمان" : "Below Safety"} value={stats.belowSafety} accent="var(--warning)" />
         <StatCard label={language === "ar" ? "إجمالي المواد" : "Total Materials"} value={stats.total} accent="var(--accent)" />

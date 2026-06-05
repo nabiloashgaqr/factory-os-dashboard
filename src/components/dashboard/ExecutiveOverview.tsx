@@ -10,7 +10,7 @@ import {
   countByAlert,
   buildChartSeries,
 } from "@/lib/kpiProcessor";
-import { Card, SectionHeader, StatCard, Spinner, EmptyState } from "@/components/shared/ui";
+import { Card, SectionHeader, StatCard, SkeletonGrid, EmptyState } from "@/components/shared/ui";
 import ProactiveAiAssistant from "@/components/shared/ProactiveAiAssistant";
 import { getCleanKpiName } from "@/lib/notionMapper";
 import { formatCurrency } from "@/lib/utils";
@@ -92,7 +92,7 @@ export default function ExecutiveOverview() {
     };
   }, [filteredKpis, data]);
 
-  if (loading) return <Spinner label="Connecting to secure telemetry server..." />;
+  if (loading) return <SkeletonGrid cards={8} />;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -104,7 +104,7 @@ export default function ExecutiveOverview() {
       <ProactiveAiAssistant />
 
       {/* KPI cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 fos-stagger">
         <StatCard
           label={t.latestOEE}
           value={stats.avgOee}
@@ -272,6 +272,12 @@ export default function ExecutiveOverview() {
                 data={chartSeries}
                 margin={{ top: 10, right: 10, left: -15, bottom: 24 }}
               >
+                <defs>
+                  <linearGradient id="barActual" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.95} />
+                    <stop offset="100%" stopColor="var(--accent)" stopOpacity={0.35} />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="4 4" stroke="var(--border)" opacity={0.5} />
                 <XAxis
                   dataKey="label"
@@ -309,7 +315,7 @@ export default function ExecutiveOverview() {
                 <Legend wrapperStyle={{ fontSize: "13px", fontWeight: 800 }} verticalAlign="top" height={36} />
                 <Bar
                   dataKey="Actual"
-                  fill="var(--accent)"
+                  fill="url(#barActual)"
                   name={language === "ar" ? "المعدل الفعلي المحسوب" : "Computed Actual Mean"}
                   radius={[5, 5, 0, 0]}
                   maxBarSize={40}

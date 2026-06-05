@@ -81,7 +81,7 @@ export default function ActionPlanControl() {
 
       <ProactiveAiAssistant />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 fos-stagger">
         <StatCard label={t.openActions} value={stats.open} accent="var(--accent)" />
         <StatCard label={language === "ar" ? "مكتملة" : "Completed"} value={stats.completed} accent="var(--success)" />
         <StatCard label={t.avgExecution} value={`${stats.avgExec}%`} accent="var(--warning)" />

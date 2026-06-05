@@ -49,6 +49,7 @@ interface RuntimeState {
   usingCache: boolean;
   isAiSidebarOpen: boolean;
   activeTab: string;
+  sidebarCollapsed: boolean;
   errorLog: string[];
 }
 
@@ -81,6 +82,7 @@ interface Actions {
   setUsingCache: (v: boolean) => void;
   setIsAiSidebarOpen: (open: boolean) => void;
   setActiveTab: (tab: string) => void;
+  toggleSidebar: () => void;
   pushError: (msg: string) => void;
   resetSettings: () => void;
 }
@@ -119,6 +121,7 @@ export const useStore = create<AppState>()(
       usingCache: false,
       isAiSidebarOpen: false,
       activeTab: "overview",
+      sidebarCollapsed: false,
       errorLog: [],
 
       setLanguage: (language) => set({ language }),
@@ -148,6 +151,7 @@ export const useStore = create<AppState>()(
       setUsingCache: (usingCache) => set({ usingCache }),
       setIsAiSidebarOpen: (isAiSidebarOpen) => set({ isAiSidebarOpen }),
       setActiveTab: (activeTab) => set({ activeTab }),
+      toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
       pushError: (msg) =>
         set((state) => ({
           errorLog: [

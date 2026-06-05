@@ -70,7 +70,7 @@ export default function ProgressEvidence() {
 
       <ProactiveAiAssistant />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 fos-stagger">
         <StatCard label={t.verifiedSavings} value={formatCurrency(stats.totalSaving)} accent="var(--success)" />
         <StatCard label={language === "ar" ? "متوسط التحسّن" : "Avg Improvement"} value={`${stats.avgImprovement}%`} accent="var(--accent)" />
         <StatCard label={language === "ar" ? "تم التحقق" : "Verified"} value={stats.verified} accent="var(--success)" />
