@@ -112,3 +112,45 @@ function round2(n: number): number {
   if (!isFinite(n)) return 0;
   return Number(n.toFixed(2));
 }
+
+export interface ChartSeriesRow {
+  kpiName: string; // original key (for localization)
+  label: string; // display label, annotated with the scale divisor when scaled
+  Actual: number;
+  Target: number;
+  scale: number; // divisor applied (1 = none)
+  unit: string;
+}
+
+/**
+ * Builds chart-ready rows on a single, balanced axis.
+ *
+ * Different KPIs live on wildly different magnitudes (e.g. Defect Rate in
+ * ppm/thousands vs Scrap Rate in %). Plotted together, the large ones crush
+ * everything else to a flat line. This auto-scaler divides any oversized
+ * metric by the smallest power of 10 that brings it back into the shared
+ * range, and annotates the label (e.g. "Defect Rate ÷100") — fully dynamic,
+ * so it works for ANY future KPI without hard-coding names.
+ */
+export function buildChartSeries(
+  kpis: ProcessedKpi[],
+  axisMax = 120
+): ChartSeriesRow[] {
+  return kpis.map((k) => {
+    const peak = Math.max(Math.abs(k.averageActualValue), Math.abs(k.targetValue));
+    let scale = 1;
+    // Find the smallest power of 10 that fits the value under axisMax.
+    while (peak / scale > axisMax) scale *= 10;
+
+    const label = scale > 1 ? `${k.kpiName} ÷${scale}` : k.kpiName;
+    return {
+      kpiName: k.kpiName,
+      label,
+      Actual: round2(k.averageActualValue / scale),
+      Target: round2(k.targetValue / scale),
+      scale,
+      unit: k.unit,
+    };
+  });
+}
+

@@ -8,6 +8,7 @@ import {
   aggregateKpiMeasurements,
   applyKpiFilters,
   countByAlert,
+  buildChartSeries,
 } from "@/lib/kpiProcessor";
 import { Card, SectionHeader, StatCard, Spinner, EmptyState } from "@/components/shared/ui";
 import ProactiveAiAssistant from "@/components/shared/ProactiveAiAssistant";
@@ -47,6 +48,9 @@ export default function ExecutiveOverview() {
     () => aggregateKpiMeasurements(filteredKpis),
     [filteredKpis]
   );
+
+  // Chart series on a single balanced axis (oversized KPIs auto-scaled).
+  const chartSeries = useMemo(() => buildChartSeries(aggregated), [aggregated]);
 
   const alerts = useMemo(() => countByAlert(filteredKpis), [filteredKpis]);
 
@@ -256,50 +260,67 @@ export default function ExecutiveOverview() {
               : "Arithmetic mean of actual readings vs. preset engineering targets."}
           </p>
         </div>
-        <div className="h-80 w-full">
-          {aggregated.length === 0 ? (
+        <div className="h-[400px] w-full">
+          {chartSeries.length === 0 ? (
             <EmptyState message={t.noData} />
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              {/* Composed: actual = soft bars, target = clean reference line
-                  so the gap reads at a single glance (no crowded twin bars). */}
+              {/* Composed on one balanced axis: oversized KPIs auto-scaled
+                  (label shows the ÷N divisor). Actual = bars, Target = line,
+                  so the gap reads at a single glance. */}
               <ComposedChart
-                data={aggregated}
-                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                data={chartSeries}
+                margin={{ top: 10, right: 10, left: -15, bottom: 24 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
+                <CartesianGrid strokeDasharray="4 4" stroke="var(--border)" opacity={0.5} />
                 <XAxis
-                  dataKey="kpiName"
+                  dataKey="label"
                   stroke="var(--text)"
-                  fontSize={10}
+                  tick={{ fill: "var(--text)", fontSize: 12, fontWeight: 700 }}
                   tickLine={false}
-                  tickFormatter={(v: string) => getCleanKpiName(v, language)}
+                  angle={-15}
+                  dy={10}
+                  height={60}
+                  textAnchor="end"
+                  interval={0}
+                  tickFormatter={(v: string) => {
+                    // Keep the "÷N" scale hint while localizing the KPI name.
+                    const [name, div] = v.split(" ÷");
+                    const clean = getCleanKpiName(name, language);
+                    return div ? `${clean} ÷${div}` : clean;
+                  }}
                 />
-                <YAxis stroke="var(--text)" fontSize={10} tickLine={false} />
+                <YAxis
+                  stroke="var(--text)"
+                  domain={[0, 120]}
+                  tick={{ fill: "var(--text)", fontSize: 12, fontWeight: 600 }}
+                  tickLine={false}
+                />
                 <Tooltip
                   cursor={{ fill: "transparent" }}
                   contentStyle={{
                     backgroundColor: "var(--card)",
                     borderColor: "var(--border)",
-                    borderRadius: "8px",
-                    fontSize: "12px",
+                    borderRadius: "12px",
+                    fontSize: "13px",
+                    fontWeight: "bold",
                   }}
                 />
-                <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "10px" }} />
+                <Legend wrapperStyle={{ fontSize: "13px", fontWeight: 800 }} verticalAlign="top" height={36} />
                 <Bar
-                  dataKey="averageActualValue"
+                  dataKey="Actual"
                   fill="var(--accent)"
-                  name={language === "ar" ? "المتوسط الفعلي" : "Computed Actual Mean"}
-                  radius={[4, 4, 0, 0]}
-                  maxBarSize={46}
+                  name={language === "ar" ? "المعدل الفعلي المحسوب" : "Computed Actual Mean"}
+                  radius={[5, 5, 0, 0]}
+                  maxBarSize={40}
                 />
                 <Line
                   type="monotone"
-                  dataKey="targetValue"
+                  dataKey="Target"
                   stroke="var(--warning)"
-                  strokeWidth={3}
-                  dot={{ r: 4, strokeWidth: 2 }}
-                  name={language === "ar" ? "المستهدف" : "Engineering Target"}
+                  strokeWidth={3.5}
+                  dot={{ r: 5, strokeWidth: 2, fill: "var(--warning)" }}
+                  name={language === "ar" ? "المستهدف الهندسي" : "Engineering Target"}
                 />
               </ComposedChart>
             </ResponsiveContainer>

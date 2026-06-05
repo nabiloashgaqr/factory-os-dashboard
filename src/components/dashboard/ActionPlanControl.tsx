@@ -6,7 +6,7 @@ import { getTranslations } from "@/lib/i18n";
 import { useFactoryData } from "@/components/shared/DataProvider";
 import { Card, SectionHeader, StatCard, EmptyState, Badge } from "@/components/shared/ui";
 import { getCleanKpiName } from "@/lib/notionMapper";
-import ContextualAI from "@/components/shared/ContextualAI";
+import ProactiveAiAssistant from "@/components/shared/ProactiveAiAssistant";
 import { formatCurrency, downloadCsv, shortRef } from "@/lib/utils";
 import { CheckSquare, Download, AlertTriangle } from "lucide-react";
 import {
@@ -79,7 +79,7 @@ export default function ActionPlanControl() {
         }
       />
 
-      <ContextualAI pageContext="action_control" currentData={{ stats, byPriority }} />
+      <ProactiveAiAssistant />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label={t.openActions} value={stats.open} accent="var(--accent)" />

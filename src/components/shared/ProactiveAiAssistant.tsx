@@ -51,6 +51,8 @@ export default function ProactiveAiAssistant() {
       kpi_intel: { ar: "مساعد استخبارات الأداء", en: "KPI Intelligence AI Intel" },
       inventory: { ar: "مساعد إدارة مخاطر المخزون", en: "Inventory Risk AI Intel" },
       actions: { ar: "مساعد متابعة خطط العمل", en: "Action Plan AI Intel" },
+      evidence: { ar: "مساعد متابعة إثباتات التقدم", en: "Progress Evidence AI Intel" },
+      roi: { ar: "مساعد العوائد المالية", en: "Financial ROI AI Intel" },
       predictive: { ar: "مساعد الصيانة التنبؤية", en: "Predictive Maintenance AI Intel" },
     };
     const title =
@@ -88,7 +90,23 @@ export default function ProactiveAiAssistant() {
               ? "Trigger auto-reorder for depleted SKUs and refresh lead-times."
               : "Maintain the weekly review cadence; no emergency action.",
           };
-    } else if (activeTab === "actions" || activeTab === "evidence" || activeTab === "roi") {
+    } else if (activeTab === "evidence") {
+      const verified = data.progress.filter((p) => p.verified).length;
+      const pending = data.progress.length - verified;
+      fallback = language === "ar"
+        ? {
+            check: `تم تدقيق ${data.progress.length} إثبات تقدم، منها ${verified} موثّق.`,
+            remind: `${pending} إثبات بانتظار التحقق والاعتماد الفني.`,
+            follow: `متابعة الأدلة المرتبطة بالخطط المفتوحة لإغلاقها.`,
+            recommend: "تسريع التحقق من الإثباتات المعلّقة وتوثيق الدروس المستفادة.",
+          }
+        : {
+            check: `Audited ${data.progress.length} progress entries, ${verified} verified.`,
+            remind: `${pending} entries awaiting technical verification.`,
+            follow: "Follow up evidence linked to open plans to close them.",
+            recommend: "Fast-track pending verifications and capture lessons learned.",
+          };
+    } else if (activeTab === "actions" || activeTab === "roi") {
       fallback = language === "ar"
         ? {
             check: `تمت مراجعة ${data.actions.length} خطة عمل وحالات تنفيذها.`,

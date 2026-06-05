@@ -5,7 +5,7 @@ import { useStore } from "@/store/useStore";
 import { getTranslations } from "@/lib/i18n";
 import { useFactoryData } from "@/components/shared/DataProvider";
 import { Card, SectionHeader, StatCard, EmptyState } from "@/components/shared/ui";
-import InventoryAiAssistant from "@/components/dashboard/InventoryAiAssistant";
+import ProactiveAiAssistant from "@/components/shared/ProactiveAiAssistant";
 import { formatNumber, downloadCsv } from "@/lib/utils";
 import { Package, Download } from "lucide-react";
 import {
@@ -74,7 +74,7 @@ export default function InventoryRiskMonitor() {
         }
       />
 
-      <InventoryAiAssistant stats={stats} />
+      <ProactiveAiAssistant />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label={t.expediteItems} value={stats.expedite} accent="var(--critical)" />

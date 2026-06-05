@@ -5,6 +5,7 @@ import { useStore } from "@/store/useStore";
 import { getTranslations } from "@/lib/i18n";
 import { useFactoryData } from "@/components/shared/DataProvider";
 import { Card, SectionHeader, StatCard, EmptyState } from "@/components/shared/ui";
+import ProactiveAiAssistant from "@/components/shared/ProactiveAiAssistant";
 import { formatCurrency, downloadCsv, shortRef } from "@/lib/utils";
 import { ShieldCheck, FileText, CheckCircle, Clock, User, Calendar, TrendingUp, Download } from "lucide-react";
 import {
@@ -65,6 +66,8 @@ export default function ProgressEvidence() {
           </button>
         }
       />
+
+      <ProactiveAiAssistant />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label={t.verifiedSavings} value={formatCurrency(stats.totalSaving)} accent="var(--success)" />
