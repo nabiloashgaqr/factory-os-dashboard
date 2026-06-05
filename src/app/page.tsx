@@ -127,11 +127,34 @@ function DashboardShell() {
         {/* Sidebar */}
         <nav
           data-print="hide"
-          className={`${
+          className={`relative ${
             sidebarCollapsed ? "w-16" : "w-60"
-          } bg-[var(--card)] border-e border-[var(--border)] py-4 flex flex-col flex-shrink-0 overflow-y-auto overflow-x-hidden transition-[width] duration-300 ease-in-out`}
+          } bg-[var(--card)] border-e border-[var(--border)] py-4 flex flex-col flex-shrink-0 transition-[width] duration-300 ease-in-out`}
         >
-          <div className={`flex-1 space-y-4 ${sidebarCollapsed ? "px-2" : "px-3"}`}>
+          {/* Edge collapse / expand toggle (top, on the outer border) */}
+          <button
+            onClick={toggleSidebar}
+            title={
+              sidebarCollapsed
+                ? language === "ar"
+                  ? "فتح القائمة"
+                  : "Expand"
+                : language === "ar"
+                ? "طيّ القائمة"
+                : "Collapse"
+            }
+            className="absolute top-3 z-20 w-6 h-6 rounded-full bg-[var(--card)] border border-[var(--border)] shadow-md flex items-center justify-center text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[var(--bg)] hover:border-[var(--accent)] transition-all"
+            style={{ [isRtl ? "left" : "right"]: "-12px" } as React.CSSProperties}
+          >
+            {(() => {
+              // Chevron points toward where the panel will move.
+              const collapseIsLeft = !isRtl; // LTR collapses to the left
+              const pointLeft = sidebarCollapsed ? !collapseIsLeft : collapseIsLeft;
+              return pointLeft ? <ChevronLeft size={14} /> : <ChevronRight size={14} />;
+            })()}
+          </button>
+
+          <div className={`flex-1 overflow-y-auto overflow-x-hidden space-y-4 ${sidebarCollapsed ? "px-2" : "px-3"} mt-6`}>
             {navGroups.map((group) => (
               <div key={group.name} className="space-y-1">
                 {!sidebarCollapsed && (
@@ -194,29 +217,6 @@ function DashboardShell() {
                 {!sidebarCollapsed && <span>{t.settings}</span>}
               </button>
             </div>
-          </div>
-
-          {/* Collapse toggle */}
-          <div className={`pt-3 ${sidebarCollapsed ? "px-2" : "px-3"}`}>
-            <button
-              onClick={toggleSidebar}
-              title={sidebarCollapsed ? "Expand" : "Collapse"}
-              className={`w-full flex items-center gap-2 rounded-lg text-xs font-medium opacity-60 hover:opacity-100 hover:bg-[var(--border)] transition-all ${
-                sidebarCollapsed ? "justify-center px-0 py-2.5" : "px-3 py-2"
-              }`}
-            >
-              {(() => {
-                // Point "outward" to expand when collapsed, "inward" to collapse.
-                const expandDir = isRtl ? "left" : "right";
-                const showLeft = sidebarCollapsed
-                  ? expandDir === "left"
-                  : expandDir === "right";
-                return showLeft ? <ChevronLeft size={16} /> : <ChevronRight size={16} />;
-              })()}
-              {!sidebarCollapsed && (
-                <span>{language === "ar" ? "طيّ القائمة" : "Collapse"}</span>
-              )}
-            </button>
           </div>
         </nav>
 

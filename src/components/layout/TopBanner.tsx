@@ -6,14 +6,14 @@ import { useStore } from "@/store/useStore";
 import { aiReady } from "@/lib/ai";
 import { getTranslations } from "@/lib/i18n";
 import { useFactoryData } from "@/components/shared/DataProvider";
-import { Clock, Database, Sparkles, RefreshCw, Repeat, Bot, FileDown } from "lucide-react";
+import { Clock, Database, Sparkles, RefreshCw, Repeat, Bot, FileDown, Languages } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import AiContextSidebar from "@/components/shared/AiContextSidebar";
 import NotificationBell from "@/components/layout/NotificationBell";
 
 export default function TopBanner() {
   const store = useStore();
-  const { language, syncStatus, lastSync, notionToken, aiProvider, autoSync, autoSyncInterval, usingCache, isAiSidebarOpen, setIsAiSidebarOpen, companyName, companyLogo } =
+  const { language, setLanguage, syncStatus, lastSync, notionToken, aiProvider, autoSync, autoSyncInterval, usingCache, isAiSidebarOpen, setIsAiSidebarOpen, companyName, companyLogo } =
     store;
   const t = getTranslations(language);
   const { refresh, loading } = useFactoryData();
@@ -84,6 +84,18 @@ export default function TopBanner() {
 
       {/* Status cluster */}
       <div className="flex items-center gap-2 md:gap-3 text-[var(--text)]">
+        {/* Compact language toggle (AR / EN) */}
+        <button
+          onClick={() => setLanguage(language === "ar" ? "en" : "ar")}
+          title={language === "ar" ? "English" : "العربية"}
+          className="flex items-center gap-1.5 px-2.5 h-9 rounded-md border border-[var(--border)] bg-[var(--bg)] hover:border-[var(--accent)] transition-all font-bold text-xs"
+        >
+          <Languages size={15} className="text-[var(--accent)]" />
+          <span className="tabular-nums tracking-wide">
+            {language === "ar" ? "ع" : "EN"}
+          </span>
+        </button>
+
         <span className="fos-pill hidden sm:inline-flex opacity-90">
           <Clock size={13} className="opacity-70" />
           {syncLabel()}
