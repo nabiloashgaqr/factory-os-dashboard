@@ -6,8 +6,9 @@ import { getTranslations } from "@/lib/i18n";
 import { useFactoryData } from "@/components/shared/DataProvider";
 import { Card, SectionHeader, StatCard, EmptyState } from "@/components/shared/ui";
 import ProactiveAiAssistant from "@/components/shared/ProactiveAiAssistant";
-import { formatCurrency, downloadCsv, shortRef } from "@/lib/utils";
-import { ShieldCheck, FileText, CheckCircle, Clock, User, Calendar, TrendingUp, Download } from "lucide-react";
+import { formatCurrency, downloadCsv } from "@/lib/utils";
+import { looksLikeNotionId } from "@/lib/notionMapper";
+import { ShieldCheck, FileText, CheckCircle, Clock, User, Calendar, TrendingUp, Download, Link as LinkIcon } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -125,14 +126,18 @@ export default function ProgressEvidence() {
                   </div>
 
                   <div className="space-y-3 w-full">
-                    {/* Clean reference tag instead of a faded raw UUID subtitle */}
-                    <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono">
-                      <span className="bg-[var(--bg)] px-2.5 py-1 rounded-md border border-[var(--border)] font-bold">
-                        {language === "ar" ? "مرجع:" : "REF:"} {shortRef(ev.id, "PR")}
-                      </span>
-                      {ev.sourceActionPlan && (
+                    {/* Meaningful tags: linked action plan + progress stage
+                        (real names resolved from Notion, no raw UUID codes). */}
+                    <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                      {ev.sourceActionPlan && !looksLikeNotionId(ev.sourceActionPlan) && (
+                        <span className="bg-accent-soft text-[var(--accent)] px-2.5 py-1 rounded-md font-bold flex items-center gap-1">
+                          <LinkIcon size={11} />
+                          {ev.sourceActionPlan}
+                        </span>
+                      )}
+                      {ev.stage && (
                         <span className="bg-[var(--bg)] px-2.5 py-1 rounded-md border border-[var(--border)] font-bold opacity-80">
-                          {shortRef(ev.sourceActionPlan, "AP")}
+                          {language === "ar" ? "المرحلة:" : "Stage:"} {ev.stage}
                         </span>
                       )}
                     </div>

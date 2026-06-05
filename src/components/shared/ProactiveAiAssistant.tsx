@@ -185,11 +185,23 @@ export default function ProactiveAiAssistant() {
     string,
     { check: [string, string]; remind: [string, string]; follow: [string, string]; recommend: [string, string] }
   > = {
+    overview: {
+      check: ["نبض المصنع", "Factory Pulse"],
+      remind: ["مخاطر حرجة", "Critical Risks"],
+      follow: ["أثر مالي", "Financial Impact"],
+      recommend: ["قرار تنفيذي", "Executive Decision"],
+    },
     kpi_intel: {
       check: ["تفسير البيانات", "Data Interpretation"],
       remind: ["السبب الجذري (5-Why)", "Root Cause (5-Why)"],
       follow: ["التنبؤ والمخاطر", "Predictive Trend & Risk"],
       recommend: ["الحل الهندسي", "Engineered Solution"],
+    },
+    inventory: {
+      check: ["جرد المخزون", "Stock Audit"],
+      remind: ["تنبيه النفاد", "Stock-Out Alert"],
+      follow: ["متابعة التوريد", "Supplier Follow-up"],
+      recommend: ["توصية الشراء", "Reorder Recommendation"],
     },
     actions: {
       check: ["تدقيق التنفيذ", "Execution Audit"],

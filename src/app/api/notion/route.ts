@@ -140,27 +140,39 @@ async function mapActions(
   );
 }
 
-function mapProgress(pages: any[]): ProgressEntry[] {
-  return pages.map((page) => {
-    const p = page.properties || {};
-    const status = readText(pick(p, ["Status"]));
-    return {
-      id: page.id,
-      entryTitle: readText(pick(p, ["Entry Title", "Name"])),
-      sourceActionPlan: readText(pick(p, ["Source Action Plan", "Action Plan"])),
-      date: readDate(pick(p, ["Date"])),
-      stage: readText(pick(p, ["Progress Stage", "Stage"])),
-      status: status || "Unknown",
-      baselineValue: readNumber(pick(p, ["Baseline Value", "Baseline"])),
-      actualPostFix: readNumber(pick(p, ["Actual (Post-Fix)", "Actual"])),
-      improvementPct: readNumber(pick(p, ["Improvement %", "Improvement"])),
-      financialSaving: readNumber(pick(p, ["Financial Saving ($)", "Financial Saving"])),
-      verifiedBy: readText(pick(p, ["Verified By"])),
-      verified: /complete|verified|closed|done/i.test(status),
-      notes: readText(pick(p, ["Notes"])),
-      lessonLearned: readText(pick(p, ["Lesson Learned"])),
-    };
-  });
+async function mapProgress(
+  pages: any[],
+  resolveTitle: (id: string) => Promise<string>
+): Promise<ProgressEntry[]> {
+  return Promise.all(
+    pages.map(async (page) => {
+      const p = page.properties || {};
+      const status = readText(pick(p, ["Status"]));
+      const srcProp = pick(p, ["Source Action Plan", "Action Plan"]);
+      const srcRel = getRelationId(srcProp);
+      // Prefer the real linked action-plan title over a raw relation id.
+      let sourceActionPlan = srcRel ? await resolveTitle(srcRel) : readText(srcProp);
+      if (looksLikeNotionId(sourceActionPlan)) {
+        sourceActionPlan = resolveKpiName(sourceActionPlan);
+      }
+      return {
+        id: page.id,
+        entryTitle: readText(pick(p, ["Entry Title", "Name"])),
+        sourceActionPlan,
+        date: readDate(pick(p, ["Date"])),
+        stage: readText(pick(p, ["Progress Stage", "Stage"])),
+        status: status || "Unknown",
+        baselineValue: readNumber(pick(p, ["Baseline Value", "Baseline"])),
+        actualPostFix: readNumber(pick(p, ["Actual (Post-Fix)", "Actual"])),
+        improvementPct: readNumber(pick(p, ["Improvement %", "Improvement"])),
+        financialSaving: readNumber(pick(p, ["Financial Saving ($)", "Financial Saving"])),
+        verifiedBy: readText(pick(p, ["Verified By"])),
+        verified: /complete|verified|closed|done/i.test(status),
+        notes: readText(pick(p, ["Notes"])),
+        lessonLearned: readText(pick(p, ["Lesson Learned"])),
+      };
+    })
+  );
 }
 
 function mapInventory(pages: any[]): InventoryItem[] {
@@ -223,9 +235,10 @@ export async function POST(request: Request) {
     // Shared resolver fetches & caches related-page titles (real KPI names).
     const resolveTitle = await makeTitleResolver(notion);
 
-    const [kpis, actions] = await Promise.all([
+    const [kpis, actions, progress] = await Promise.all([
       mapKpis(kpiPages, resolveTitle),
       mapActions(actionPages, resolveTitle),
+      mapProgress(progressPages, resolveTitle),
     ]);
 
     return NextResponse.json({
@@ -233,7 +246,7 @@ export async function POST(request: Request) {
       data: {
         kpis,
         actions,
-        progress: mapProgress(progressPages),
+        progress,
         inventory: mapInventory(inventoryPages),
       },
     });
