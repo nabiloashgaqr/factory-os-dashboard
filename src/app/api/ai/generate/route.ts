@@ -32,6 +32,7 @@ function envKeyFor(provider: string): string {
     case "openai": return process.env.OPENAI_API_KEY || "";
     case "claude": return process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY || "";
     case "groq": return process.env.GROQ_API_KEY || "";
+    case "openrouter": return process.env.OPENROUTER_API_KEY || "";
     default: return "";
   }
 }
@@ -42,6 +43,7 @@ function defaultModel(provider: string): string {
     case "openai": return "gpt-4o-mini";
     case "claude": return "claude-3-5-sonnet-latest";
     case "groq": return "llama3-70b-8192";
+    case "openrouter": return "openrouter/auto";
     default: return "";
   }
 }
@@ -87,6 +89,10 @@ async function runGroq(apiKey: string, model: string, fullPrompt: string, cfg: {
   return runOpenAICompatible("https://api.groq.com/openai/v1", apiKey, model, fullPrompt, cfg);
 }
 
+async function runOpenRouter(apiKey: string, model: string, fullPrompt: string, cfg: { temperature: number; maxOutputTokens: number; json?: boolean }): Promise<GenResult> {
+  return runOpenAICompatible("https://openrouter.ai/api/v1", apiKey, model, fullPrompt, cfg);
+}
+
 async function runClaude(apiKey: string, model: string, fullPrompt: string, cfg: { temperature: number; maxOutputTokens: number }): Promise<GenResult> {
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -106,7 +112,7 @@ export async function POST(request: Request) {
 
     const provider = (rawProvider || "gemini").toLowerCase();
     if (provider === "disabled") return NextResponse.json({ success: false, error: "AI is disabled in Settings." }, { status: 400 });
-    if (!["gemini", "openai", "claude", "groq"].includes(provider)) return NextResponse.json({ success: false, error: `Unknown AI provider: ${provider}` }, { status: 400 });
+    if (!["gemini", "openai", "claude", "groq", "openrouter"].includes(provider)) return NextResponse.json({ success: false, error: `Unknown AI provider: ${provider}` }, { status: 400 });
 
     const apiKey = bodyKey || envKeyFor(provider);
     if (!apiKey) return NextResponse.json({ success: false, error: `${provider} API key is missing.` }, { status: 401 });
@@ -126,6 +132,7 @@ export async function POST(request: Request) {
     let result: GenResult;
     if (provider === "gemini") result = await runGemini(apiKey, model, fullPrompt, cfg);
     else if (provider === "groq") result = await runGroq(apiKey, model, fullPrompt, cfg);
+    else if (provider === "openrouter") result = await runOpenRouter(apiKey, model, fullPrompt, cfg);
     else if (provider === "openai") result = await runOpenAI(apiKey, model, fullPrompt, cfg);
     else result = await runClaude(apiKey, model, fullPrompt, cfg);
 

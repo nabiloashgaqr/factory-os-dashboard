@@ -42,6 +42,7 @@ const PROVIDER_META: Record<
   openai: { label: "OpenAI (GPT Workspace)", keyPlaceholder: "sk-proj-..." },
   claude: { label: "Claude (Anthropic Console)", keyPlaceholder: "sk-ant-..." },
   groq: { label: "Groq (Fast LPU Inference)", keyPlaceholder: "gsk_..." },
+  openrouter: { label: "OpenRouter (Unified API)", keyPlaceholder: "sk-or-v1-..." },
 };
 
 export default function SettingsPanel() {
@@ -219,6 +220,7 @@ export default function SettingsPanel() {
               <option value="openai">OpenAI</option>
               <option value="claude">Claude</option>
               <option value="groq">🚀 Groq (Free)</option>
+              <option value="openrouter">🌐 OpenRouter (Unified)</option>
               <option value="disabled">Disabled</option>
             </select>
           </div>
@@ -229,6 +231,16 @@ export default function SettingsPanel() {
               {models.length === 0 && <option>—</option>}
               <option value="__custom__">{s.language === "ar" ? "✏️ مخصّص" : "✏️ Custom"}</option>
             </select>
+            {isCustomModel && (
+              <input
+                type="text"
+                value={s.aiModel}
+                onChange={(e) => s.setAiModel(e.target.value)}
+                placeholder={s.language === "ar" ? "اكتب معرّف الموديل..." : "Type model id..."}
+                className={inputCls + " mt-2"}
+                autoFocus
+              />
+            )}
           </div>
         </div>
         {s.aiProvider !== "disabled" && (
@@ -238,6 +250,7 @@ export default function SettingsPanel() {
             {s.aiProvider === "openai" && <input type="password" value={s.openaiKey} onChange={(e) => s.setOpenaiKey(e.target.value)} placeholder="sk-proj-..." className={inputCls} />}
             {s.aiProvider === "claude" && <input type="password" value={s.claudeKey} onChange={(e) => s.setClaudeKey(e.target.value)} placeholder="sk-ant-..." className={inputCls} />}
             {s.aiProvider === "groq" && <input type="password" value={s.groqKey} onChange={(e) => s.setGroqKey(e.target.value)} placeholder="gsk_..." className={inputCls} />}
+            {s.aiProvider === "openrouter" && <input type="password" value={s.openrouterKey} onChange={(e) => s.setOpenrouterKey(e.target.value)} placeholder="sk-or-v1-..." className={inputCls} />}
           </div>
         )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

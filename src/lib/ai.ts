@@ -24,6 +24,13 @@ export const MODELS_BY_PROVIDER: Record<string, AiModel[]> = {
     { id: "claude-3-5-haiku-latest", name: "Claude 3.5 Haiku (instant)" },
     { id: "claude-3-haiku-20240307", name: "Claude 3 Haiku (legacy fast)" },
   ],
+  openrouter: [
+    { id: "openrouter/auto", name: "🔄 Auto (best available)" },
+    { id: "gpt-4o-mini", name: "GPT-4o Mini" },
+    { id: "deepseek/deepseek-chat", name: "DeepSeek V3" },
+    { id: "qwen/qwen-2.5-coder-32b-instruct", name: "Qwen 2.5 Coder 32B" },
+    { id: "mistralai/mistral-7b-instruct", name: "Mistral 7B Instruct" },
+  ],
   groq: [
     { id: "llama3-70b-8192", name: "Llama 3 70B (fast, best overall)" },
     { id: "llama3-8b-8192", name: "Llama 3 8B (lightning fast)" },
@@ -43,6 +50,7 @@ export interface AiCredsSnapshot {
   openaiKey: string;
   claudeKey: string;
   groqKey: string;
+  openrouterKey: string;
 }
 
 /** The API key that belongs to the currently selected provider. */
@@ -56,6 +64,8 @@ export function keyForProvider(s: AiCredsSnapshot): string {
       return s.claudeKey;
     case "groq":
       return s.groqKey;
+    case "openrouter":
+      return s.openrouterKey;
     default:
       return "";
   }
