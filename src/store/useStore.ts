@@ -40,7 +40,7 @@ export type ThemeName =
 
 export type SyncStatus = "synced" | "syncing" | "failed" | "offline";
 
-export type AiProvider = "gemini" | "openai" | "claude" | "disabled";
+export type AiProvider = "gemini" | "openai" | "claude" | "groq" | "disabled";
 
 interface Settings {
   // Preferences
@@ -62,6 +62,7 @@ interface Settings {
   geminiKey: string;
   openaiKey: string;
   claudeKey: string;
+  groqKey: string;
   aiProvider: AiProvider;
   aiModel: string;
   temperature: number;
@@ -100,6 +101,7 @@ interface Actions {
   setGeminiKey: (v: string) => void;
   setOpenaiKey: (v: string) => void;
   setClaudeKey: (v: string) => void;
+  setGroqKey: (v: string) => void;
   setAiProvider: (v: AiProvider) => void;
   setAiModel: (v: string) => void;
   setTemperature: (v: number) => void;
@@ -131,6 +133,7 @@ const defaultSettings: Settings = {
   geminiKey: "",
   openaiKey: "",
   claudeKey: "",
+  groqKey: "",
   aiProvider: "gemini",
   aiModel: "gemini-1.5-flash",
   temperature: 0.4,
@@ -168,6 +171,7 @@ export const useStore = create<AppState>()(
       setGeminiKey: (geminiKey) => set({ geminiKey }),
       setOpenaiKey: (openaiKey) => set({ openaiKey }),
       setClaudeKey: (claudeKey) => set({ claudeKey }),
+      setGroqKey: (groqKey) => set({ groqKey }),
       setAiProvider: (aiProvider) => set({ aiProvider }),
       setAiModel: (aiModel) => set({ aiModel }),
       setTemperature: (temperature) => set({ temperature }),
@@ -208,6 +212,7 @@ export const useStore = create<AppState>()(
         geminiKey: state.geminiKey,
         openaiKey: state.openaiKey,
         claudeKey: state.claudeKey,
+        groqKey: state.groqKey,
         aiProvider: state.aiProvider,
         aiModel: state.aiModel,
         temperature: state.temperature,

@@ -26,17 +26,17 @@ export interface GenerateResult {
  * changes the engine everywhere — with zero per-component wiring.
  */
 export function useAI() {
-  const { aiProvider, geminiKey, openaiKey, claudeKey, aiModel, temperature, maxTokens } =
+  const { aiProvider, geminiKey, openaiKey, claudeKey, groqKey, aiModel, temperature, maxTokens } =
     useStore();
 
-  const ready = aiReady({ aiProvider, geminiKey, openaiKey, claudeKey });
+  const ready = aiReady({ aiProvider, geminiKey, openaiKey, claudeKey, groqKey });
 
   const generate = useCallback(
     async (opts: GenerateOptions): Promise<GenerateResult> => {
       if (aiProvider === "disabled") {
         return { success: false, text: "", error: "AI is disabled in Settings." };
       }
-      const apiKey = keyForProvider({ aiProvider, geminiKey, openaiKey, claudeKey });
+      const apiKey = keyForProvider({ aiProvider, geminiKey, openaiKey, claudeKey, groqKey });
       if (!apiKey) {
         return { success: false, text: "", error: `${aiProvider} API key is missing.` };
       }
@@ -69,7 +69,7 @@ export function useAI() {
         return { success: false, text: "", error: e?.message || "Network error" };
       }
     },
-    [aiProvider, geminiKey, openaiKey, claudeKey, aiModel, temperature, maxTokens]
+    [aiProvider, geminiKey, openaiKey, claudeKey, groqKey, aiModel, temperature, maxTokens]
   );
 
   return { generate, ready, provider: aiProvider };

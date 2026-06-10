@@ -41,6 +41,7 @@ const PROVIDER_META: Record<
   gemini: { label: "Gemini (Google AI Studio)", keyPlaceholder: "AIzaSy..." },
   openai: { label: "OpenAI (GPT Workspace)", keyPlaceholder: "sk-proj-..." },
   claude: { label: "Claude (Anthropic Console)", keyPlaceholder: "sk-ant-..." },
+  groq: { label: "Groq (Fast LPU Inference)", keyPlaceholder: "gsk_..." },
 };
 
 export default function SettingsPanel() {
@@ -217,6 +218,7 @@ export default function SettingsPanel() {
               <option value="gemini">Gemini</option>
               <option value="openai">OpenAI</option>
               <option value="claude">Claude</option>
+              <option value="groq">🚀 Groq (Free)</option>
               <option value="disabled">Disabled</option>
             </select>
           </div>
@@ -235,6 +237,7 @@ export default function SettingsPanel() {
             {s.aiProvider === "gemini" && <input type="password" value={s.geminiKey} onChange={(e) => s.setGeminiKey(e.target.value)} placeholder="AIzaSy..." className={inputCls} />}
             {s.aiProvider === "openai" && <input type="password" value={s.openaiKey} onChange={(e) => s.setOpenaiKey(e.target.value)} placeholder="sk-proj-..." className={inputCls} />}
             {s.aiProvider === "claude" && <input type="password" value={s.claudeKey} onChange={(e) => s.setClaudeKey(e.target.value)} placeholder="sk-ant-..." className={inputCls} />}
+            {s.aiProvider === "groq" && <input type="password" value={s.groqKey} onChange={(e) => s.setGroqKey(e.target.value)} placeholder="gsk_..." className={inputCls} />}
           </div>
         )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -24,6 +24,13 @@ export const MODELS_BY_PROVIDER: Record<string, AiModel[]> = {
     { id: "claude-3-5-haiku-latest", name: "Claude 3.5 Haiku (instant)" },
     { id: "claude-3-haiku-20240307", name: "Claude 3 Haiku (legacy fast)" },
   ],
+  groq: [
+    { id: "llama3-70b-8192", name: "Llama 3 70B (fast, best overall)" },
+    { id: "llama3-8b-8192", name: "Llama 3 8B (lightning fast)" },
+    { id: "mixtral-8x7b-32768", name: "Mixtral 8x7B (32K context)" },
+    { id: "gemma2-9b-it", name: "Gemma 2 9B (Google, lightweight)" },
+    { id: "llama-3.3-70b-versatile", name: "Llama 3.3 70B (latest gen)" },
+  ],
 };
 
 export function modelsForProvider(provider: string): AiModel[] {
@@ -35,6 +42,7 @@ export interface AiCredsSnapshot {
   geminiKey: string;
   openaiKey: string;
   claudeKey: string;
+  groqKey: string;
 }
 
 /** The API key that belongs to the currently selected provider. */
@@ -46,6 +54,8 @@ export function keyForProvider(s: AiCredsSnapshot): string {
       return s.openaiKey;
     case "claude":
       return s.claudeKey;
+    case "groq":
+      return s.groqKey;
     default:
       return "";
   }
