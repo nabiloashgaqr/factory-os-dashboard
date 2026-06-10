@@ -162,7 +162,8 @@ export default function ProactiveAiAssistant() {
     try {
       const res = await generate({
         json: true,
-        prompt: `You are the FactoryOS proactive assistant for the "${activeTab}" view. Using ONLY the data snapshot, return a JSON object with exactly these keys, each ONE short sentence in ${
+        prompt: `CRITICAL RULES: Average all KPI values before analysis. Use only KPI names found in the snapshot data. Use exact alert counts from snapshot. NEVER hallucinate data.
+You are the FactoryOS proactive assistant for the "${activeTab}" view. Using ONLY the data snapshot, return a JSON object with exactly these keys, each ONE short sentence in ${
           language === "ar" ? "professional Arabic" : "concise English"
         }: "check" (verification of current state), "remind" (a reminder of a threshold/limit at risk), "follow" (an item to follow up), "recommend" (one actionable recommendation). Keep it specific to this page's domain.`,
         contextData: snapshot,

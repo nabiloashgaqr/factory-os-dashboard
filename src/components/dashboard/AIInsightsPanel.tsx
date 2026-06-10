@@ -57,11 +57,22 @@ export default function AIInsightsPanel() {
     setLoading(true);
     setResponse(null);
     try {
+      // DYNAMIC KPI names extracted from the actual data snapshot
+      const kpiNamesList = context?.kpiSummary?.map((k: any) => k.kpiName) || [];
+      const kpiNamesStr = kpiNamesList.length > 0 ? kpiNamesList.join(', ') : '(from contextData)';
+      const dataRules = `CRITICAL DATA RULES:
+1. KPI VALUES MUST BE AVERAGED: Calculate the ARITHMETIC MEAN of actualValue for each KPI.
+2. AVAILABLE KPIs (from actual data): ${kpiNamesStr}. Analyze ALL of them. Do NOT invent KPIs.
+3. INVENTORY IDs: Use only actual ids from contextData (e.g., INV-1, INV-2, INV-3, INV-4).
+4. ALERTS: Count alertLevel fields directly. Report exact Critical and Warning numbers.
+5. VERIFIED SAVINGS: Sum only where verified=true from contextData.
+6. Never hallucinate numbers or categories not present in the data.`;
+
       const instruction = custom
-        ? custom
-        : `Generate a "${promptLabel}" for the factory based on the data context. Be specific, executive-grade, and actionable.`;
+        ? dataRules + "\n\n" + custom
+        : dataRules + "\n\nGenerate a \"" + promptLabel + "\" for the factory based on the data context. Be specific, executive-grade, and actionable.";
       const json = await generate({
-        prompt: `${instruction}\nRespond in ${language === "ar" ? "professional industrial Arabic" : "concise executive English"}.`,
+        prompt: instruction + "\nRespond in " + (language === "ar" ? "professional industrial Arabic" : "concise executive English") + ".",
         contextData: context,
       });
       if (json.success) setResponse(json.text);

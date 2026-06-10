@@ -47,7 +47,14 @@ export default function ReportingEngine() {
     setError(null);
     try {
       const json = await runAI({
-          prompt: `Generate a detailed ${type} Industrial Performance Report. Structure: 1) Executive Summary, 2) Target vs Actual Variance, 3) Critical Blockers & Safety-Stock Gaps, 4) Recommended Next Actions. Language: ${language === "ar" ? "Formal Arabic manufacturing terminology" : "Executive English"}.`,
+          prompt: `IMPORTANT DATA RULES: 
+1. AVERAGE all KPI actualValue readings per KPI name before comparing to targets.
+Available KPIs: use all KPI names from the contextData.kpiSummary. Do NOT invent any KPI.
+3. Inventory IDs are: INV-1, INV-2, INV-3, INV-4 (use exact IDs, do not rename).
+4. Count Critical and Warning alerts directly. Report the exact numbers.
+5. Verified savings = sum of financialSaving where verified=true only.
+
+Generate a detailed ${type} Industrial Performance Report. Structure: 1) Executive Summary, 2) Target vs Actual Variance, 3) Critical Blockers & Safety-Stock Gaps, 4) Recommended Next Actions. Language: ${language === "ar" ? "Formal Arabic manufacturing terminology" : "Executive English"}.`,
           contextData: buildContext(type),
         });
       if (json.success) setContent(json.text);

@@ -38,7 +38,13 @@ export default function ShiftHandoverTerminal() {
     setError(null);
     try {
       const json = await generate({
-          prompt: `Compile an automated Shift Handover briefing. Provide exactly 3 critical operational bullet points for the incoming team in ${language === "ar" ? "Arabic" : "English"}. Be tactical and concise.`,
+          prompt: `CRITICAL DATA RULES: 
+1. Use AVERAGED KPI values only (mean of actualValue per KPI).
+ Available KPIs: use all KPI names from contextData. Do NOT invent any KPI.
+3. Inventory IDs: INV-1, INV-2, INV-3, INV-4.
+4. Report exact Critical/Warning alert counts.
+
+Compile an automated Shift Handover briefing. Provide exactly 3 critical operational bullet points for the incoming team in ${language === "ar" ? "Arabic" : "English"}. Be tactical and concise.`,
           contextData: context,
         });
       if (json.success) setLog(json.text);
