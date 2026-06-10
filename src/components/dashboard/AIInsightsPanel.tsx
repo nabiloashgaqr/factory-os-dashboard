@@ -52,11 +52,21 @@ export default function AIInsightsPanel() {
     const isAr = language === "ar";
     return [
       { id: "health", icon: "🏭", text: isAr ? "تقييم صحة المصنع العام" : "Overall factory health assessment" },
-      { id: "improve", icon: "💡", text: isAr ? "أهم فرص التحسين" : "Top improvement opportunities" },
-      { id: "benchmark", icon: "🌍", text: isAr ? "مقارنة بالمعيار العالمي" : "Benchmark vs world-class" },
-      { id: "roadmap", icon: "🗺️", text: isAr ? "خطة تحسين 30-60-90 يوما" : "30-60-90 day improvement roadmap" },
-      { id: "risks", icon: "⚠️", text: isAr ? "أهم 5 مخاطر تواجه المصنع" : "Top 5 factory risks" },
-      { id: "dmaic", icon: "📋", text: isAr ? "تطبيق منهجية DMAIC" : "Apply DMAIC methodology" },
+      { id: "improve", icon: "💡", text: isAr ? "أهم 10 فرص للتحسين" : "Top 10 improvement opportunities" },
+      { id: "benchmark", icon: "🌍", text: isAr ? "مقارنة أدائنا بالمعيار العالمي" : "Benchmark vs world-class manufacturers" },
+      { id: "roadmap", icon: "🗺️", text: isAr ? "خطة تحسين استراتيجية 30-60-90 يوما" : "Strategic 30-60-90 day improvement roadmap" },
+      { id: "risks", icon: "⚠️", text: isAr ? "أهم 5 مخاطر تشغيلية تهدد المصنع" : "Top 5 operational risks threatening the plant" },
+      { id: "dmaic", icon: "📊", text: isAr ? "تطبيق منهجية DMAIC على أكبر مشكلة" : "Apply DMAIC methodology to the biggest problem" },
+      { id: "cost_reduction", icon: "💰", text: isAr ? "فرص خفض التكاليف بنسبة 10%" : "Cost reduction opportunities - target 10% savings" },
+      { id: "quality", icon: "✅", text: isAr ? "خطة تحسين الجودة الشاملة" : "Comprehensive quality improvement plan" },
+      { id: "supply_chain", icon: "🚚", text: isAr ? "تحليل مخاطر سلسلة التوريد" : "Supply chain risk and resilience analysis" },
+      { id: "maintenance", icon: "🔧", text: isAr ? "استراتيجية الصيانة المثلى" : "Optimal maintenance strategy (TPM + Predictive)" },
+      { id: "lean", icon: "🧰", text: isAr ? "تحديد أنواع الهدر الثمانية في المصنع" : "Identify 8 types of Lean waste in our plant" },
+      { id: "bottleneck", icon: "🔴", text: isAr ? "تحليل الاختناقات ورفع الطاقة الإنتاجية" : "Bottleneck analysis to increase capacity" },
+      { id: "energy", icon: "⚡", text: isAr ? "تقييم كفاءة الطاقة وتقليل البصمة الكربونية" : "Energy efficiency & carbon footprint reduction" },
+      { id: "workforce", icon: "👥", text: isAr ? "تحليل إنتاجية القوى العاملة" : "Workforce productivity and skills gap analysis" },
+      { id: "inventory_opt", icon: "📦", text: isAr ? "تحسين المخزون وتقليل رأس المال المقيد" : "Inventory optimization to reduce tied-up capital" },
+      { id: "shift", icon: "🏆", text: isAr ? "تحليل مقارن لأداء الورديات" : "Comparative shift performance analysis" },
     ];
   }, [language]);
 
@@ -79,10 +89,20 @@ export default function AIInsightsPanel() {
     if (!response) return;
     const isRtl = language === "ar";
     const date = new Date().toLocaleString();
-    const safe = response.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>").replace(/\*\*(.*?)\*\*/g,"<strong>$1</strong>");
-    const html = "<!DOCTYPE html><html dir=\"" + (isRtl ? "rtl" : "ltr") + "\" lang=\"" + language + "\"><head><meta charset=UTF-8><title>FactoryOS Report</title><style>@page{margin:2cm}body{font-family:" + (isRtl ? "serif" : "Arial,sans-serif") + ";font-size:12px;line-height:1.8;color:#1a1a1a;max-width:800px;margin:auto;padding:20px}h1{font-size:22px;border-bottom:3px solid #2563eb}.content{background:#f8f9fa;padding:16px 20px;border-radius:8px;border-left:4px solid #34a853}.footer{margin-top:32px;padding-top:16px;border-top:1px solid #ddd;font-size:9px;color:#999;text-align:center}</style></head><body><h1>FactoryOS AI - IE Report</h1><p>Report: " + activePrompt + " | " + date + " | " + availableKpis.length + " KPIs</p><div class=content>" + safe + "</div><div class=footer>FactoryOS Live Dashboard</div></body></html>";
-    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "FactoryOS_Report_" + (new Date().toISOString().split("T")[0]) + ".html"; a.click();
+    const isAr = language === "ar";
+    const safe = response.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>").replace(/\*\*(.*?)\*\*/g,"<strong>$1</strong>").replace(/__(.*?)__/g,"<strong>$1</strong>").replace(/`(.*?)`/g,"<code>$1</code>");
+    
+    let html = '<!DOCTYPE html><html dir="' + (isRtl ? "rtl" : "ltr") + '" lang="' + language + '"><head><meta charset="UTF-8"><title>' + (isAr ? "FactoryOS - \u062a\u0642\u0631\u064a\u0631 \u0627\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0635\u0646\u0627\u0639\u064a" : "FactoryOS Industrial AI Report") + '</title>';
+    html += '<style>@page{margin:1.5cm}body{font-family:' + (isRtl ? "\"Traditional Arabic\",serif" : "Arial,sans-serif") + ';font-size:11px;line-height:1.7;color:#1a1a1a;max-width:800px;margin:auto;padding:20px}h1{font-size:20px;border-bottom:2px solid #2563eb;padding-bottom:6px;color:#1e40af}.header{display:flex;justify-content:space-between;font-size:9px;color:#666;margin-bottom:20px}.meta{font-size:10px;color:#2563eb;font-weight:700;margin-bottom:16px;border:1px solid #e5e7eb;padding:10px 14px;border-radius:6px;background:#f8fafc}.content{padding:10px 0;font-size:11px;line-height:1.7;white-space:pre-wrap}.footer{margin-top:24px;padding-top:12px;border-top:1px solid #ddd;font-size:8px;color:#999;text-align:center}@media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}}</style></head><body>';
+    html += '<h1>\U0001f3ed ' + (isAr ? "FactoryOS - \u062a\u0642\u0631\u064a\u0631 \u0627\u0644\u062e\u0628\u064a\u0631 \u0627\u0644\u0635\u0646\u0627\u0639\u064a" : "FactoryOS - Industrial Engineering Report") + '</h1>';
+    html += '<div class="header"><span>' + date + '</span><span>' + availableKpis.length + ' ' + (isAr ? "\u0645\u0624\u0634\u0631" : "KPIs") + ' \u00b7 ' + (isAr ? "\u062e\u0628\u064a\u0631 \u0647\u0646\u062f\u0633\u0629 \u0635\u0646\u0627\u0639\u064a\u0629" : "Industrial Engineering Expert") + '</span></div>';
+    html += '<div class="meta">\U0001f4ca ' + (isAr ? "\u0627\u0644\u062a\u062d\u0644\u064a\u0644: " : "Analysis: ") + activePrompt + '</div>';
+    html += '<div class="content">' + safe + '</div>';
+    html += '<div class="footer">FactoryOS\u2122 Live Dashboard &middot; ' + date + '</div>';
+    html += '<script>window.onload=function(){setTimeout(function(){window.print();},500);};<\/script></body></html>';
+    
+    const win = window.open("", "_blank");
+    if (win) { win.document.write(html); win.document.close(); }
   }, [response, language, activePrompt, availableKpis.length]);
 
   return (

@@ -91,14 +91,26 @@ export default function AiContextSidebar() {
     if (msgs.length === 0) return;
     const isRtl = language === "ar";
     const date = new Date().toLocaleString();
-    let html = '<!DOCTYPE html><html dir="' + (isRtl ? "rtl" : "ltr") + '" lang="' + language + '"><head><meta charset="UTF-8"><title>FactoryOS AI - ' + context.pageTitle + '</title><style>@page{margin:2cm}body{font-family:' + (isRtl ? "serif" : "Arial,sans-serif") + ';font-size:12px;line-height:1.8;color:#1a1a1a;max-width:800px;margin:auto;padding:20px}h1{font-size:22px;border-bottom:3px solid #2563eb}.msg{margin:16px 0;padding:12px;border-radius:8px}.user{background:#e8f0fe;border-left:4px solid #2563eb}.assistant{background:#f8f9fa;border-left:4px solid #34a853}.role{font-size:10px;font-weight:700;opacity:.5}.text{white-space:pre-wrap}.footer{margin-top:32px;padding-top:16px;border-top:1px solid #ddd;font-size:9px;color:#999;text-align:center}</style></head><body><h1>FactoryOS AI - ' + context.pageTitle + '</h1><div class="header"><span>' + date + "</span><span>" + context.availableKpis.length + ' KPIs</span></div>';
+    const pageTitle = context.pageTitle || "";
+    const kpiCount = context.availableKpis.length || 0;
+    const isAr = language === "ar";
+    
+    let html = '<!DOCTYPE html><html dir="' + (isRtl ? "rtl" : "ltr") + '" lang="' + language + '"><head><meta charset="UTF-8"><title>' + (isAr ? "FactoryOS - \u062a\u0642\u0631\u064a\u0631 \u0627\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0635\u0646\u0627\u0639\u064a" : "FactoryOS AI Report") + '</title><style>@page{margin:1.5cm}body{font-family:' + (isRtl ? "\"Traditional Arabic\",serif" : "Arial,sans-serif") + ';font-size:11px;line-height:1.7;color:#1a1a1a;max-width:800px;margin:auto;padding:20px}h1{font-size:20px;border-bottom:2px solid #2563eb;padding-bottom:6px;color:#1e40af}.header{display:flex;justify-content:space-between;font-size:9px;color:#666;margin-bottom:20px}.subtitle{font-size:10px;color:#2563eb;font-weight:700;margin-bottom:16px}.msg{margin:12px 0;padding:10px 14px;border-radius:6px;page-break-inside:avoid}.user{background:#e8f0fe;border-' + (isRtl ? "right" : "left") + ':3px solid #2563eb}.assistant{background:#f8f9fa;border-' + (isRtl ? "right" : "left") + ':3px solid #34a853}.label{font-size:9px;font-weight:700;text-transform:uppercase;opacity:.5;margin-bottom:3px}.text{white-space:pre-wrap;font-size:11px}.footer{margin-top:24px;padding-top:12px;border-top:1px solid #ddd;font-size:8px;color:#999;text-align:center}@media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}}</style></head><body>';
+    html += '<h1>\U0001f3ed ' + (isAr ? "FactoryOS - \u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0635\u0646\u0627\u0639\u064a" : "FactoryOS AI Industrial Analysis") + '</h1>';
+    html += '<div class="header"><span>' + date + '</span><span>' + kpiCount + ' KPIs</span></div>';
+    html += '<div class="subtitle">\U0001f4e0 ' + pageTitle + '</div>';
+    
     msgs.forEach(m => {
-      const safe = m.text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>").replace(/\*\*(.*?)\*\*/g,"<strong>$1</strong>");
-      html += '<div class="msg ' + m.role + '"><div class="role">' + (m.role === "user" ? "You" : "IE Expert") + '</div><div class="text">' + safe + "</div></div>";
+      const safe = m.text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>").replace(/\*\*(.*?)\*\*/g,"<strong>$1</strong>").replace(/__(.*?)__/g,"<strong>$1</strong>").replace(/`(.*?)`/g,"<code>$1</code>");
+      const roleLabel = isAr ? (m.role === "user" ? "\u270e \u0633\u0624\u0627\u0644" : "\U0001f916 \u062e\u0628\u064a\u0631 \u0627\u0644\u0647\u0646\u062f\u0633\u0629") : (m.role === "user" ? "\u270e Question" : "\U0001f916 IE Expert");
+      html += '<div class="msg ' + m.role + '"><div class="label">' + roleLabel + '</div><div class="text">' + safe + '</div></div>';
     });
-    html += '<div class="footer">FactoryOS Live Dashboard - ' + date + "</div></body></html>";
-    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "FactoryOS_AI_" + activeTab + "_" + new Date().toISOString().split("T")[0] + ".html"; a.click();
+    
+    html += '<div class="footer">FactoryOS\u2122 Live Dashboard &middot; ' + date + '</div>';
+    html += '<script>window.onload=function(){setTimeout(function(){window.print();},300);};<\/script></body></html>';
+    
+    const win = window.open("", "_blank");
+    if (win) { win.document.write(html); win.document.close(); }
   }, [messages, language, context, activeTab]);
 
   if (!isAiSidebarOpen) return null;
