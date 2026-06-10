@@ -21,6 +21,7 @@ import {
   ImagePlus,
   Trash2,
   Lock,
+  ExternalLink,
 } from "lucide-react";
 
 type TestState = "idle" | "loading" | "ok" | "fail";
@@ -300,12 +301,13 @@ function TestButton({ state, onClick, label }: { state: TestState; onClick: () =
   );
 }
 
-/* ── Demo Locked View ── 
+/* ── Demo Locked View ──
  * When NEXT_PUBLIC_DEMO_LOCKED=true, the entire settings panel is replaced
- * with this professional locked notice. No API keys exposed.
+ * with this professional locked notice with purchase link.
  */
 function DemoLockedView({ language }: { language: string }) {
   const isRtl = language === "ar";
+  const purchaseUrl = "https://nabilalashqar.gumroad.com/l/FACTORYOS-TM";
   return (
     <div className="max-w-2xl mx-auto py-12 animate-fade-in">
       <Card className="p-10 text-center space-y-6">
@@ -324,7 +326,7 @@ function DemoLockedView({ language }: { language: string }) {
           </p>
         </div>
 
-        <div className="border-t border-[var(--border)] pt-6 space-y-3">
+        <div className="border-t border-[var(--border)] pt-6 space-y-4">
           <div className="grid grid-cols-2 gap-4 text-xs">
             <div className="p-4 rounded-xl bg-[color-mix(in_srgb,var(--success)_8%,transparent)] border border-[var(--border)]">
               <div className="text-lg mb-1">📊</div>
@@ -338,21 +340,73 @@ function DemoLockedView({ language }: { language: string }) {
             </div>
           </div>
 
+          {/* Purchase CTA — Full Version */}
+          <a
+            href={purchaseUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-full p-5 rounded-xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg"
+            style={{
+              background: "linear-gradient(135deg, var(--accent), #6366f1)",
+              color: "white",
+            }}
+          >
+            <div className="flex items-center justify-center gap-2 text-base mb-1">
+              <span>🚀</span>
+              <span>
+                {isRtl
+                  ? "احصل على النسخة الكاملة الآن"
+                  : "Get the Full Version Now"}
+              </span>
+              <ExternalLink size={16} />
+            </div>
+            <span className="opacity-80 text-[11px] font-normal block">
+              {isRtl
+                ? "فتح جميع الإعدادات • ربط قواعد البيانات الحقيقية • دعم فني"
+                : "Unlock all settings • Connect live databases • Priority support"}
+            </span>
+          </a>
+
+          {/* Purchase features detail */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[10px]">
+            <div className="p-2.5 rounded-lg border border-[var(--border)] bg-[var(--bg)]">
+              <div className="font-bold mb-0.5">🔓 {isRtl ? "إعدادات كاملة" : "Full Settings"}</div>
+              <div className="opacity-50">{isRtl ? "تحكم كامل بكل الخيارات" : "Full control over all options"}</div>
+            </div>
+            <div className="p-2.5 rounded-lg border border-[var(--border)] bg-[var(--bg)]">
+              <div className="font-bold mb-0.5">📡 {isRtl ? "بيانات حية" : "Live Data"}</div>
+              <div className="opacity-50">{isRtl ? "ربط بقواعد Notion الحقيقية" : "Connect real Notion databases"}</div>
+            </div>
+            <div className="p-2.5 rounded-lg border border-[var(--border)] bg-[var(--bg)]">
+              <div className="font-bold mb-0.5">🤖 {isRtl ? "AI كامل" : "Full AI"}</div>
+              <div className="opacity-50">{isRtl ? "جميع مزودي الذكاء الاصطناعي" : "All AI providers enabled"}</div>
+            </div>
+          </div>
+
           <div className="flex items-center gap-2 p-3 rounded-lg text-xs bg-[color-mix(in_srgb,var(--accent)_8%,transparent)]">
             <Sparkles size={14} className="text-[var(--accent)] flex-shrink-0" />
             <span className="opacity-70">
               {isRtl
-                ? "للحصول على النسخة الكاملة مع إعدادات مفتوحة، قم بنشر المشروع مع ضبط NEXT_PUBLIC_DEMO_LOCKED=false"
-                : "For the full version with unlocked settings, deploy with NEXT_PUBLIC_DEMO_LOCKED=false"}
+                ? "احصل على النسخة الكاملة مع إعدادات مفتوحة وربط قواعد البيانات الحقيقية"
+                : "Get the full version with unlocked settings and live database connections"}
             </span>
           </div>
         </div>
 
-        <div className="pt-4 border-t border-[var(--border)]">
+        <div className="pt-4 border-t border-[var(--border)] space-y-2">
           <div className="flex items-center justify-center gap-1.5 text-xs opacity-40">
             <Lock size={12} />
             <span>{isRtl ? "إعدادات محمية — واجهة تجريبية عامة" : "Protected settings — public demo interface"}</span>
           </div>
+          <a
+            href={purchaseUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs text-[var(--accent)] hover:underline font-bold"
+          >
+            nabilalashqar.gumroad.com/l/FACTORYOS-TM
+            <ExternalLink size={12} />
+          </a>
         </div>
       </Card>
     </div>
