@@ -5,16 +5,10 @@ import { getTranslations } from "@/lib/i18n";
 import { Card, SectionHeader, StatCard } from "@/components/shared/ui";
 import { Activity, ShieldAlert } from "lucide-react";
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-  Legend,
-  ReferenceLine,
+  LineChart, Line, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, CartesianGrid, Legend, ReferenceLine,
 } from "recharts";
+import MtbfMttrComparison from "@/components/charts/MtbfMttrComparison";
 
 const driftData = [
   { week: "W1", MTBF: 120, baseline: 110 },
@@ -31,11 +25,7 @@ export default function PredictiveMaintenance() {
     <div className="space-y-6 animate-fade-in">
       <SectionHeader
         title={t.predictive}
-        subtitle={
-          language === "ar"
-            ? "حساب مؤشرات الموثوقية MTBF / MTTR والتنبؤ بنوافذ الأعطال"
-            : "Reliability metrics (MTBF / MTTR) and failure-window prediction"
-        }
+        subtitle={language === "ar" ? "مؤشرات الموثوقية MTBF/MTTR والتنبؤ بنوافذ الأعطال" : "Reliability metrics (MTBF/MTTR) and failure-window prediction"}
         icon={<Activity className="text-[var(--warning)]" />}
       />
 
@@ -46,27 +36,22 @@ export default function PredictiveMaintenance() {
         <StatCard label={language === "ar" ? "نافذة الخطر" : "Risk Window"} value="36" unit="h" accent="var(--critical)" />
       </div>
 
+      {/* MTBF/MTTR Asset Comparison */}
+      <MtbfMttrComparison />
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="p-5">
           <div className="p-4 bg-critical-soft border border-[var(--critical)] rounded-xl text-xs flex gap-2">
             <ShieldAlert className="text-[var(--critical)] flex-shrink-0" size={18} />
             <div>
-              <p className="font-bold text-[var(--critical)] mb-1">
-                {language === "ar" ? "تنبيه انحراف حرج — الخط B" : "Critical Drift Detected — Line B"}
-              </p>
-              <p className="opacity-80 leading-relaxed">
-                {language === "ar"
-                  ? "تراجع معدل MTBF بنسبة 23% عن المعدل الطبيعي. نافذة الفشل المتوقعة خلال 36 ساعة. يُنصح بجدولة فحص وقائي للسير الناقل."
-                  : "MTBF dropped 23% below baseline. Predicted failure window within 36h. Schedule preventive conveyor inspection."}
-              </p>
+              <p className="font-bold text-[var(--critical)] mb-1">{language === "ar" ? "تنبيه — الخط B" : "Critical Drift — Line B"}</p>
+              <p className="opacity-80 leading-relaxed">{language === "ar" ? "تراجع MTBF 23%. نافذة الفشل 36 ساعة." : "MTBF dropped 23%. Failure window within 36h."}</p>
             </div>
           </div>
         </Card>
 
         <Card className="p-5">
-          <h3 className="text-sm font-semibold mb-3">
-            {language === "ar" ? "انحراف MTBF عبر الأسابيع" : "MTBF Drift by Week"}
-          </h3>
+          <h3 className="text-sm font-semibold mb-3">{language === "ar" ? "انحراف MTBF" : "MTBF Drift by Week"}</h3>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={driftData}>

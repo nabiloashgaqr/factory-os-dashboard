@@ -9,19 +9,13 @@ import ProactiveAiAssistant from "@/components/shared/ProactiveAiAssistant";
 import { formatNumber, downloadCsv } from "@/lib/utils";
 import { Package, Download } from "lucide-react";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-  Cell,
+  BarChart, Bar, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, CartesianGrid, Cell,
 } from "recharts";
+import InventoryRiskMatrix from "@/components/charts/InventoryRiskMatrix";
 
 function healthColor(item: { daysUntilStockOut: number; currentStock: number; safetyStock: number }) {
-  if (item.daysUntilStockOut <= 5 || item.currentStock < item.safetyStock * 0.6)
-    return "var(--critical)";
+  if (item.daysUntilStockOut <= 5 || item.currentStock < item.safetyStock * 0.6) return "var(--critical)";
   if (item.currentStock < item.safetyStock) return "var(--warning)";
   return "var(--success)";
 }
@@ -36,21 +30,13 @@ export default function InventoryRiskMonitor() {
     const expedite = items.filter((i) => /expedite/i.test(i.procurementSignal)).length;
     const belowSafety = items.filter((i) => i.currentStock < i.safetyStock).length;
     const totalReorder = items.reduce((s, i) => s + i.recommendedOrderQty, 0);
-    const urgentMaterials = items
-      .filter((i) => /expedite/i.test(i.procurementSignal) || i.currentStock < i.safetyStock)
-      .map((i) => i.materialName);
-    return { expedite, belowSafety, totalReorder, total: items.length, urgentMaterials };
+    return { expedite, belowSafety, totalReorder, total: items.length };
   }, [items]);
 
   const stockOutData = useMemo(
-    () =>
-      [...items]
-        .sort((a, b) => a.daysUntilStockOut - b.daysUntilStockOut)
-        .map((i) => ({
-          name: i.materialName,
-          days: i.daysUntilStockOut,
-          color: healthColor(i),
-        })),
+    () => [...items].sort((a, b) => a.daysUntilStockOut - b.daysUntilStockOut).map((i) => ({
+      name: i.materialName, days: i.daysUntilStockOut, color: healthColor(i),
+    })),
     [items]
   );
 
@@ -58,20 +44,9 @@ export default function InventoryRiskMonitor() {
     <div className="space-y-6 animate-fade-in">
       <SectionHeader
         title={t.inventory}
-        subtitle={
-          language === "ar"
-            ? "الربط التلقائي مع مستودع بيانات Inventory Intelligence"
-            : "Automatic link with the Inventory Intelligence warehouse data"
-        }
+        subtitle={language === "ar" ? "الربط التلقائي مع مستودع Inventory Intelligence" : "Automatic link with Inventory Intelligence"}
         icon={<Package className="text-[var(--accent)]" />}
-        right={
-          <button
-            onClick={() => downloadCsv("inventory.csv", items as unknown as Record<string, unknown>[])}
-            className="flex items-center gap-2 text-xs bg-[var(--border)] hover:bg-[var(--accent)] hover:text-[var(--bg)] px-3 py-2 rounded-lg font-medium transition-colors"
-          >
-            <Download size={14} /> CSV
-          </button>
-        }
+        right={<button onClick={() => downloadCsv("inventory.csv", items as unknown as Record<string, unknown>[])} className="flex items-center gap-2 text-xs bg-[var(--border)] hover:bg-[var(--accent)] hover:text-[var(--bg)] px-3 py-2 rounded-lg font-medium transition-colors"><Download size={14} /> CSV</button>}
       />
 
       <ProactiveAiAssistant />
@@ -80,30 +55,24 @@ export default function InventoryRiskMonitor() {
         <StatCard label={t.expediteItems} value={stats.expedite} accent="var(--critical)" />
         <StatCard label={language === "ar" ? "تحت حد الأمان" : "Below Safety"} value={stats.belowSafety} accent="var(--warning)" />
         <StatCard label={language === "ar" ? "إجمالي المواد" : "Total Materials"} value={stats.total} accent="var(--accent)" />
-        <StatCard label={language === "ar" ? "كمية إعادة الطلب" : "Recommended Order Qty"} value={formatNumber(stats.totalReorder)} accent="var(--accent)" />
+        <StatCard label={language === "ar" ? "كمية إعادة الطلب" : "Reorder Qty"} value={formatNumber(stats.totalReorder)} accent="var(--accent)" />
       </div>
 
+      {/* Inventory Risk Matrix */}
+      <InventoryRiskMatrix />
+
       <Card className="p-5">
-        <h3 className="text-sm font-semibold mb-3">
-          {language === "ar" ? "الأيام حتى نفاد المخزون" : "Days Until Stock-Out"}
-        </h3>
+        <h3 className="text-sm font-semibold mb-3">{language === "ar" ? "أيام حتى نفاد المخزون" : "Days Until Stock-Out"}</h3>
         <div className="h-64">
-          {stockOutData.length === 0 ? (
-            <EmptyState message={t.noData} />
-          ) : (
+          {stockOutData.length === 0 ? <EmptyState message={t.noData} /> : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={stockOutData} layout="vertical" margin={{ left: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
                 <XAxis type="number" stroke="var(--text)" fontSize={11} />
                 <YAxis type="category" dataKey="name" stroke="var(--text)" fontSize={10} width={140} />
-                <Tooltip
-                  cursor={{ fill: "transparent" }}
-                  contentStyle={{ backgroundColor: "var(--card)", borderColor: "var(--border)", fontSize: "12px" }}
-                />
+                <Tooltip cursor={{ fill: "transparent" }} contentStyle={{ backgroundColor: "var(--card)", borderColor: "var(--border)", fontSize: "12px" }} />
                 <Bar dataKey="days" radius={[0, 4, 4, 0]}>
-                  {stockOutData.map((e, i) => (
-                    <Cell key={i} fill={e.color} />
-                  ))}
+                  {stockOutData.map((e, i) => <Cell key={i} fill={e.color} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -112,12 +81,8 @@ export default function InventoryRiskMonitor() {
       </Card>
 
       <Card className="p-5 overflow-x-auto">
-        <h3 className="text-sm font-semibold mb-3">
-          {language === "ar" ? "جدول مراقبة المخزون" : "Inventory Table"}
-        </h3>
-        {items.length === 0 ? (
-          <EmptyState message={t.noData} />
-        ) : (
+        <h3 className="text-sm font-semibold mb-3">{language === "ar" ? "جدول المخزون" : "Inventory Table"}</h3>
+        {items.length === 0 ? <EmptyState message={t.noData} /> : (
           <table className="w-full text-xs border-collapse">
             <thead>
               <tr className="opacity-60 border-b border-[var(--border)]">
@@ -127,7 +92,7 @@ export default function InventoryRiskMonitor() {
                 <th className="py-2 text-end">{language === "ar" ? "الأمان" : "Safety"}</th>
                 <th className="py-2 text-end">{language === "ar" ? "الاستهلاك" : "Burn"}</th>
                 <th className="py-2 text-end">{language === "ar" ? "نفاد(يوم)" : "Stock-Out"}</th>
-                <th className="py-2 text-end">{language === "ar" ? "إعادة طلب" : "Reorder Qty"}</th>
+                <th className="py-2 text-end">{language === "ar" ? "إعادة طلب" : "Reorder"}</th>
                 <th className="py-2 text-center">{language === "ar" ? "الإشارة" : "Signal"}</th>
               </tr>
             </thead>
@@ -135,11 +100,7 @@ export default function InventoryRiskMonitor() {
               {items.map((i) => {
                 const color = healthColor(i);
                 return (
-                  <tr
-                    key={i.id}
-                    className="border-b border-[var(--border)] last:border-none hover:bg-[var(--bg)] transition-colors"
-                    style={{ backgroundColor: `color-mix(in srgb, ${color} 5%, transparent)` }}
-                  >
+                  <tr key={i.id} className="border-b border-[var(--border)] last:border-none hover:bg-[var(--bg)] transition-colors" style={{ backgroundColor: `color-mix(in srgb, ${color} 5%, transparent)` }}>
                     <td className="py-2 font-semibold flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
                       {i.materialName}

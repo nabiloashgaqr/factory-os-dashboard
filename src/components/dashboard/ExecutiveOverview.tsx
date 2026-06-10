@@ -26,8 +26,10 @@ import {
   CartesianGrid,
   Legend,
 } from "recharts";
+import OeeTrendChart from "@/components/charts/OeeTrendChart";
+import ExecutiveBulletChart from "@/components/charts/ExecutiveBulletChart";
+import LeadingLaggingPanel from "@/components/charts/LeadingLaggingPanel";
 
-// KPIs where a LOWER value is better → invert the "critical" comparison.
 const LOWER_IS_BETTER = /scrap|defect|waste|downtime|mttr|cycle|changeover|عيوب|هدر|توقف|تبديل|دورة/i;
 
 function isKpiCritical(name: string, actual: number, target: number): boolean {
@@ -48,10 +50,7 @@ export default function ExecutiveOverview() {
     () => aggregateKpiMeasurements(filteredKpis),
     [filteredKpis]
   );
-
-  // Chart series on a single balanced axis (oversized KPIs auto-scaled).
   const chartSeries = useMemo(() => buildChartSeries(aggregated), [aggregated]);
-
   const alerts = useMemo(() => countByAlert(filteredKpis), [filteredKpis]);
 
   const stats = useMemo(() => {
@@ -59,7 +58,6 @@ export default function ExecutiveOverview() {
     const avgOee = oeeRows.length
       ? oeeRows.reduce((s, k) => s + k.actualValue, 0) / oeeRows.length
       : 0;
-
     const openActions = data.actions.filter(
       (a) => !/complete|closed|done/i.test(a.status)
     );
@@ -71,8 +69,7 @@ export default function ExecutiveOverview() {
       );
     });
     const avgExec = data.actions.length
-      ? data.actions.reduce((s, a) => s + a.executionPct, 0) /
-        data.actions.length
+      ? data.actions.reduce((s, a) => s + a.executionPct, 0) / data.actions.length
       : 0;
     const verifiedSavings = data.progress
       .filter((p) => p.verified)
@@ -96,76 +93,35 @@ export default function ExecutiveOverview() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <SectionHeader
-        title={t.overview}
-        subtitle={t.tagline}
-      />
-
+      <SectionHeader title={t.overview} subtitle={t.tagline} />
       <ProactiveAiAssistant />
 
-      {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 fos-stagger">
-        <StatCard
-          label={t.latestOEE}
-          value={stats.avgOee}
-          unit="%"
-          accent="var(--success)"
-        />
-        <StatCard
-          label={t.totalMeasurements}
-          value={stats.measurements}
-          accent="var(--accent)"
-        />
-        <StatCard
-          label={t.criticalAlerts}
-          value={alerts.Critical}
-          accent="var(--critical)"
-        />
-        <StatCard
-          label={t.warningAlerts}
-          value={alerts.Warning}
-          accent="var(--warning)"
-        />
-        <StatCard
-          label={t.openActions}
-          value={stats.openActions}
-          accent="var(--accent)"
-        />
-        <StatCard
-          label={t.overdueActions}
-          value={stats.overdue}
-          accent="var(--critical)"
-        />
-        <StatCard
-          label={t.verifiedSavings}
-          value={formatCurrency(stats.verifiedSavings)}
-          accent="var(--success)"
-        />
-        <StatCard
-          label={t.avgExecution}
-          value={`${stats.avgExec}%`}
-          accent="var(--accent)"
-        />
+        <StatCard label={t.latestOEE} value={stats.avgOee} unit="%" accent="var(--success)" />
+        <StatCard label={t.totalMeasurements} value={stats.measurements} accent="var(--accent)" />
+        <StatCard label={t.criticalAlerts} value={alerts.Critical} accent="var(--critical)" />
+        <StatCard label={t.warningAlerts} value={alerts.Warning} accent="var(--warning)" />
+        <StatCard label={t.openActions} value={stats.openActions} accent="var(--accent)" />
+        <StatCard label={t.overdueActions} value={stats.overdue} accent="var(--critical)" />
+        <StatCard label={t.verifiedSavings} value={formatCurrency(stats.verifiedSavings)} accent="var(--success)" />
+        <StatCard label={t.avgExecution} value={`${stats.avgExec}%`} accent="var(--accent)" />
       </div>
 
-      {/* Aggregated KPI cards (dynamic per KPI Master Link variable).
-          Wide layout · large fonts · no truncation · status color bar ·
-          bilingual names · control-room readability. */}
+      {/* OEE Trend + Executive Bullet Chart */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <OeeTrendChart />
+        <ExecutiveBulletChart />
+      </div>
+
+      {/* Aggregated KPI cards */}
       {aggregated.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {aggregated.map((kpi) => {
             const localizedTitle = getCleanKpiName(kpi.kpiName, language);
-            const critical = isKpiCritical(
-              kpi.kpiName,
-              kpi.averageActualValue,
-              kpi.targetValue
-            );
+            const critical = isKpiCritical(kpi.kpiName, kpi.averageActualValue, kpi.targetValue);
             const statusColor = critical ? "var(--critical)" : "var(--success)";
             const sideClass = language === "ar" ? "right-0" : "left-0";
             const padClass = language === "ar" ? "pr-4" : "pl-4";
-
-            // Signed deviation vs target (favorable colour respects
-            // lower-is-better KPIs, so a lower scrap rate reads green).
             const rawDev = kpi.targetValue
               ? ((kpi.averageActualValue - kpi.targetValue) / kpi.targetValue) * 100
               : 0;
@@ -173,71 +129,28 @@ export default function ExecutiveOverview() {
             const devColor = critical ? "var(--critical)" : "var(--success)";
 
             return (
-              <div
-                key={kpi.kpiName}
-                className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-200 flex flex-col justify-between min-h-[180px] relative overflow-hidden"
-              >
-                {/* Status color bar — instant at-a-glance health */}
-                <div
-                  className={`absolute top-0 bottom-0 ${sideClass} w-2`}
-                  style={{ backgroundColor: statusColor }}
-                />
-
+              <div key={kpi.kpiName} className="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-6 shadow-md hover:shadow-xl transition-all duration-200 flex flex-col justify-between min-h-[180px] relative overflow-hidden">
+                <div className={`absolute top-0 bottom-0 ${sideClass} w-2`} style={{ backgroundColor: statusColor }} />
                 <div className={`${padClass} space-y-3`}>
-                  {/* KPI name: large, wraps freely, no ellipsis */}
-                  <h4 className="text-base font-bold opacity-80 tracking-wide leading-relaxed min-h-[44px]">
-                    {localizedTitle}
-                  </h4>
-
-                  {/* Current averaged value + live deviation badge */}
+                  <h4 className="text-base font-bold opacity-80 tracking-wide leading-relaxed min-h-[44px]">{localizedTitle}</h4>
                   <div className="flex items-baseline gap-2 flex-wrap">
-                    <span
-                      className="text-4xl font-black font-mono tracking-tight"
-                      style={{ color: statusColor }}
-                    >
-                      {kpi.averageActualValue}
-                    </span>
-                    <span className="text-sm font-bold opacity-60 uppercase">
-                      {kpi.unit || ""}
-                    </span>
+                    <span className="text-4xl font-black font-mono tracking-tight" style={{ color: statusColor }}>{kpi.averageActualValue}</span>
+                    <span className="text-sm font-bold opacity-60 uppercase">{kpi.unit || ""}</span>
                     {kpi.targetValue !== 0 && (
-                      <span
-                        className="flex items-center gap-0.5 text-[11px] font-extrabold px-1.5 py-0.5 rounded-lg"
-                        style={{
-                          color: devColor,
-                          backgroundColor: `color-mix(in srgb, ${devColor} 14%, transparent)`,
-                        }}
-                      >
-                        {critical ? <TrendingDown size={12} /> : <ArrowUpRight size={12} />}
-                        {devText}
+                      <span className="flex items-center gap-0.5 text-[11px] font-extrabold px-1.5 py-0.5 rounded-lg" style={{ color: devColor, backgroundColor: `color-mix(in srgb, ${devColor} 14%, transparent)` }}>
+                        {critical ? <TrendingDown size={12} /> : <ArrowUpRight size={12} />}{devText}
                       </span>
                     )}
                   </div>
                 </div>
-
-                {/* Comparison footer: enlarged target + samples badge */}
-                <div
-                  className={`mt-4 pt-3 border-t border-[var(--border)] ${padClass} flex items-center justify-between text-xs`}
-                >
+                <div className={`mt-4 pt-3 border-t border-[var(--border)] ${padClass} flex items-center justify-between text-xs`}>
                   <div className="flex items-center gap-1.5">
                     <span className="opacity-50">{t.target}:</span>
-                    <span className="font-bold text-sm">
-                      {kpi.targetValue}
-                      {kpi.unit || ""}
-                    </span>
+                    <span className="font-bold text-sm">{kpi.targetValue}{kpi.unit || ""}</span>
                   </div>
-
-                  <div
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-extrabold"
-                    style={{
-                      color: statusColor,
-                      backgroundColor: `color-mix(in srgb, ${statusColor} 14%, transparent)`,
-                    }}
-                  >
+                  <div className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-extrabold" style={{ color: statusColor, backgroundColor: `color-mix(in srgb, ${statusColor} 14%, transparent)` }}>
                     {critical ? <TrendingDown size={12} /> : <ArrowUpRight size={12} />}
-                    <span>
-                      {kpi.readingCount} {t.samples}
-                    </span>
+                    <span>{kpi.readingCount} {t.samples}</span>
                   </div>
                 </div>
               </div>
@@ -246,32 +159,16 @@ export default function ExecutiveOverview() {
         </div>
       )}
 
-      {/* Chart */}
+      {/* Aggregated chart */}
       <Card className="p-6 space-y-4">
         <div>
-          <h3 className="font-bold text-base">
-            {language === "ar"
-              ? "التحليل البياني المركب للمتغيرات"
-              : "Aggregated Actual vs Target"}
-          </h3>
-          <p className="text-xs opacity-50">
-            {language === "ar"
-              ? "متوسط الأداء الفعلي مقابل المستهدف الهندسي للفترة المفلترة"
-              : "Arithmetic mean of actual readings vs. preset engineering targets."}
-          </p>
+          <h3 className="font-bold text-base">{language === "ar" ? "التحليل البياني المركب للمتغيرات" : "Aggregated Actual vs Target"}</h3>
+          <p className="text-xs opacity-50">{language === "ar" ? "متوسط الأداء الفعلي مقابل المستهدف" : "Arithmetic mean of actual readings vs. targets."}</p>
         </div>
         <div className="h-[400px] w-full">
-          {chartSeries.length === 0 ? (
-            <EmptyState message={t.noData} />
-          ) : (
+          {chartSeries.length === 0 ? <EmptyState message={t.noData} /> : (
             <ResponsiveContainer width="100%" height="100%">
-              {/* Composed on one balanced axis: oversized KPIs auto-scaled
-                  (label shows the ÷N divisor). Actual = bars, Target = line,
-                  so the gap reads at a single glance. */}
-              <ComposedChart
-                data={chartSeries}
-                margin={{ top: 10, right: 10, left: -15, bottom: 24 }}
-              >
+              <ComposedChart data={chartSeries} margin={{ top: 10, right: 10, left: -15, bottom: 24 }}>
                 <defs>
                   <linearGradient id="barActual" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.95} />
@@ -279,60 +176,20 @@ export default function ExecutiveOverview() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="4 4" stroke="var(--border)" opacity={0.5} />
-                <XAxis
-                  dataKey="label"
-                  stroke="var(--text)"
-                  tick={{ fill: "var(--text)", fontSize: 12, fontWeight: 700 }}
-                  tickLine={false}
-                  angle={-15}
-                  dy={10}
-                  height={60}
-                  textAnchor="end"
-                  interval={0}
-                  tickFormatter={(v: string) => {
-                    // Keep the "÷N" scale hint while localizing the KPI name.
-                    const [name, div] = v.split(" ÷");
-                    const clean = getCleanKpiName(name, language);
-                    return div ? `${clean} ÷${div}` : clean;
-                  }}
-                />
-                <YAxis
-                  stroke="var(--text)"
-                  domain={[0, 120]}
-                  tick={{ fill: "var(--text)", fontSize: 12, fontWeight: 600 }}
-                  tickLine={false}
-                />
-                <Tooltip
-                  cursor={{ fill: "transparent" }}
-                  contentStyle={{
-                    backgroundColor: "var(--card)",
-                    borderColor: "var(--border)",
-                    borderRadius: "12px",
-                    fontSize: "13px",
-                    fontWeight: "bold",
-                  }}
-                />
+                <XAxis dataKey="label" stroke="var(--text)" tick={{ fill: "var(--text)", fontSize: 12, fontWeight: 700 }} tickLine={false} angle={-15} dy={10} height={60} textAnchor="end" interval={0} tickFormatter={(v: string) => { const [name, div] = v.split(" ÷"); return div ? `${getCleanKpiName(name, language)} ÷${div}` : getCleanKpiName(name, language); }} />
+                <YAxis stroke="var(--text)" domain={[0, 120]} tick={{ fill: "var(--text)", fontSize: 12, fontWeight: 600 }} tickLine={false} />
+                <Tooltip cursor={{ fill: "transparent" }} contentStyle={{ backgroundColor: "var(--card)", borderColor: "var(--border)", borderRadius: "12px", fontSize: "13px", fontWeight: "bold" }} />
                 <Legend wrapperStyle={{ fontSize: "13px", fontWeight: 800 }} verticalAlign="top" height={36} />
-                <Bar
-                  dataKey="Actual"
-                  fill="url(#barActual)"
-                  name={language === "ar" ? "المعدل الفعلي المحسوب" : "Computed Actual Mean"}
-                  radius={[5, 5, 0, 0]}
-                  maxBarSize={40}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="Target"
-                  stroke="var(--warning)"
-                  strokeWidth={3.5}
-                  dot={{ r: 5, strokeWidth: 2, fill: "var(--warning)" }}
-                  name={language === "ar" ? "المستهدف الهندسي" : "Engineering Target"}
-                />
+                <Bar dataKey="Actual" fill="url(#barActual)" name={language === "ar" ? "المعدل الفعلي" : "Actual Mean"} radius={[5, 5, 0, 0]} maxBarSize={40} />
+                <Line type="monotone" dataKey="Target" stroke="var(--warning)" strokeWidth={3.5} dot={{ r: 5, strokeWidth: 2, fill: "var(--warning)" }} name={language === "ar" ? "المستهدف" : "Target"} />
               </ComposedChart>
             </ResponsiveContainer>
           )}
         </div>
       </Card>
+
+      {/* Leading vs Lagging KPIs */}
+      <LeadingLaggingPanel />
     </div>
   );
 }

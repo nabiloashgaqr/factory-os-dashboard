@@ -8,31 +8,22 @@ import { Card, SectionHeader, StatCard, EmptyState } from "@/components/shared/u
 import { formatCurrency } from "@/lib/utils";
 import { DollarSign, TrendingUp } from "lucide-react";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-  Legend,
+  BarChart, Bar, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, CartesianGrid, Legend,
 } from "recharts";
+import CostOfLossesBridgeChart from "@/components/charts/CostOfLossesBridge";
+import RoiAccumulationCurve from "@/components/charts/RoiAccumulationCurve";
 
 export default function LeanRoiTracker() {
   const { language } = useStore();
   const t = getTranslations(language);
   const { data } = useFactoryData();
 
-  // Investment ≈ projected ROI input from action plans; Savings ≈ verified savings.
   const chartData = useMemo(() => {
     return data.progress.map((p) => {
       const action = data.actions.find((a) => a.id === p.sourceActionPlan || a.targetKpi === p.entryTitle);
       const investment = action ? Math.round(action.projectedRoi * 0.25) : Math.round(p.financialSaving * 0.2);
-      return {
-        project: p.entryTitle.slice(0, 22),
-        Investment: investment,
-        Savings: p.financialSaving,
-      };
+      return { project: p.entryTitle.slice(0, 22), Investment: investment, Savings: p.financialSaving };
     });
   }, [data]);
 
@@ -47,16 +38,12 @@ export default function LeanRoiTracker() {
     <div className="space-y-6 animate-fade-in">
       <SectionHeader
         title={t.roi}
-        subtitle={
-          language === "ar"
-            ? "ربط الوفورات المالية المثبتة بأداء مبادرات التحسين المستمر"
-            : "Linking verified financial savings to continuous-improvement initiatives"
-        }
+        subtitle={language === "ar" ? "الوفورات المثبتة بأداء مبادرات التحسين" : "Verified savings linked to improvement initiatives"}
         icon={<DollarSign className="text-[var(--success)]" />}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard label={language === "ar" ? "إجمالي الاستثمار" : "Total Invested"} value={formatCurrency(totals.investment)} accent="var(--critical)" />
+        <StatCard label={language === "ar" ? "الاستثمار" : "Total Invested"} value={formatCurrency(totals.investment)} accent="var(--critical)" />
         <StatCard label={language === "ar" ? "الوفورات المثبتة" : "Verified Savings"} value={formatCurrency(totals.savings)} accent="var(--success)" />
         <Card className="p-5 flex items-center justify-between">
           <div>
@@ -67,14 +54,16 @@ export default function LeanRoiTracker() {
         </Card>
       </div>
 
+      {/* Cost of Losses Bridge + ROI Accumulation — CFO-level charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <CostOfLossesBridgeChart />
+        <RoiAccumulationCurve />
+      </div>
+
       <Card className="p-5">
-        <h3 className="text-sm font-semibold mb-3">
-          {language === "ar" ? "الاستثمار مقابل الوفورات لكل مبادرة" : "Investment vs Savings per Initiative"}
-        </h3>
+        <h3 className="text-sm font-semibold mb-3">{language === "ar" ? "الاستثمار مقابل الوفورات" : "Investment vs Savings per Initiative"}</h3>
         <div className="h-64">
-          {chartData.length === 0 ? (
-            <EmptyState message={t.noData} />
-          ) : (
+          {chartData.length === 0 ? <EmptyState message={t.noData} /> : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
