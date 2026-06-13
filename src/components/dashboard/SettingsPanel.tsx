@@ -323,7 +323,7 @@ function TestButton({ state, onClick, label }: { state: TestState; onClick: () =
  */
 function DemoLockedView({ language }: { language: string }) {
   const isRtl = language === "ar";
-  const purchaseUrl = "https://nabilalashqar.gumroad.com/l/FACTORYOS-TM";
+  const purchaseUrl = "https://www.getly.store/store/nabilalashqar-mqavpqf7";
   return (
     <div className="max-w-2xl mx-auto py-12 animate-fade-in">
       <Card className="p-10 text-center space-y-6">
@@ -420,7 +420,7 @@ function DemoLockedView({ language }: { language: string }) {
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-xs text-[var(--accent)] hover:underline font-bold"
           >
-            nabilalashqar.gumroad.com/l/FACTORYOS-TM
+            https://www.getly.store/store/nabilalashqar-mqavpqf7
             <ExternalLink size={12} />
           </a>
         </div>
